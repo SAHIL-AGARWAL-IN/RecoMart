@@ -59,6 +59,7 @@ python manage.py runserver                # http://127.0.0.1:8000
 Demo logins: `admin / Admin@123` (admin role) and `priya / Customer@123` (customer).
 
 ## Workflow
+- **Dev-machine note:** the original dev machine has a very slow internet connection. Its `.venv` was created with `py -3.12 -m venv --system-site-packages .venv` so it can reuse the global numpy, scipy, pandas and scikit-learn. Don't delete and recreate it there. Teammates use a normal venv plus `pip install -r requirements.txt`.
 - Work on a branch per phase (`phase-N-<name>`) and commit after every working step. Merge into `main` only after the user approves the phase.
 - Verify before claiming done: `check`, migrations check and tests must pass. For UI changes, take Playwright screenshots of `http://127.0.0.1:8000` at 375, 768 and 1280 px, then critique and fix.
 - At the end of each phase, update the checklist in `docs/PLAN.md` and add a section to `docs/VIVA_NOTES.md`.

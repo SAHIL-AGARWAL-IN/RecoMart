@@ -3,7 +3,7 @@
 > This is the source of truth for the build. After a `/clear`, read this file and `CLAUDE.md`, find the first unchecked phase below, and continue from there.
 
 ## Phase status
-- [ ] Phase 1: Foundation (setup, apps, models, migrations, Django admin, seed data), branch `phase-1-foundation`
+- [x] Phase 1: Foundation (setup, apps, models, migrations, Django admin, seed data), branch `phase-1-foundation` (done, waiting for the user's OK to merge)
 - [ ] Phase 2: Storefront UI (base.html, theme, auth pages, home, product list, product detail)
 - [ ] Phase 3: Shopping (cart, checkout, orders, wishlist, reviews, AJAX search & filters)
 - [ ] Phase 4: ML engine (features, training command, Joblib, recommendation API, "You may also like")
