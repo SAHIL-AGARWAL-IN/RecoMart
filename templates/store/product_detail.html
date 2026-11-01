@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load store_tags %}
+
+{% block title %}{{ product.name }} | RecoMart{% endblock %}
+{% block meta_description %}{{ product.description|truncatechars:150 }}{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <nav aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></li>
+      <li class="breadcrumb-item active text-truncate" aria-current="page">{{ product.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4 g-xl-5 align-items-start">
+    <div class="col-lg-7">
+      <div class="gallery" data-gallery>
+        <div class="gallery__main">
+          {% if gallery %}
+            <img src="{{ gallery.0 }}" alt="{{ product.name }}" width="800" height="800" data-gallery-main>
+          {% endif %}
+        </div>
+        {% if gallery|length > 1 %}
+          <div class="gallery__thumbs" role="group" aria-label="Product images">
+            {% for src in gallery %}
+              <button class="gallery__thumb" type="button" data-gallery-thumb="{{ src }}"
+                      aria-label="Show image {{ forloop.counter }} of {{ gallery|length }}"{% if forloop.first %} aria-current="true"{% endif %}>
+                <img src="{{ src }}" alt="" width="76" height="76" loading="lazy">
+              </button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="buy-box">
+        <a class="buy-box__brand" href="{% url 'store:product_list' %}?q={{ product.brand|urlencode }}">{{ product.brand }}</a>
+        <h1>{{ product.name }}</h1>
+        <a class="text-decoration-none" href="#reviews-tab-pane" data-open-tab="#reviews-tab">
+          {% stars product.rating_avg product.rating_count size="lg" %}
+        </a>
+
+        <div class="price mt-3">
+          <span class="price__now">{{ product.effective_price|inr }}</span>
+          {% if product.discount_price %}
+            <s class="price__was">MRP {{ product.price|inr }}</s>
+            <span class="price__off">You save {{ savings|inr }} ({{ product.discount_percent }}%)</span>
+          {% endif %}
+        </div>
+        <p class="small text-muted mb-3">Inclusive of all taxes</p>
+
+        {% if product.stock == 0 %}
+          <p class="stock-line stock-line--out">Out of stock</p>
+        {% elif product.stock <= 5 %}
+          <p class="stock-line stock-line--low">Only {{ product.stock }} left in stock</p>
+        {% else %}
+          <p class="stock-line stock-line--in">In stock</p>
+        {% endif %}
+
+        <div class="d-grid my-4">
+          <button class="btn btn-primary btn-lg" type="button" disabled>
+            <i class="bi bi-bag-plus me-2" aria-hidden="true"></i>Add to cart
+          </button>
+        </div>
+
+        <ul class="perks">
+          <li><i class="bi bi-truck" aria-hidden="true"></i>Free delivery on orders of {{ free_shipping_threshold|inr }} or more</li>
+          <li><i class="bi bi-cash-coin" aria-hidden="true"></i>Pay by UPI, card or cash on delivery</li>
+          <li><i class="bi bi-shield-check" aria-hidden="true"></i>Demo store: checkout is simulated</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <section class="section" aria-label="Product information">
+    <ul class="nav nav-underline" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description-tab-pane"
+                type="button" role="tab" aria-controls="description-tab-pane" aria-selected="true">Description</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-tab-pane"
+                type="button" role="tab" aria-controls="reviews-tab-pane" aria-selected="false">Reviews ({{ product.rating_count }})</button>
+      </li>
+    </ul>
+
+    <div class="tab-content pt-4">
+      <div class="tab-pane fade show active" id="description-tab-pane" role="tabpanel" aria-labelledby="description-tab" tabindex="0">
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <p style="max-width: 70ch;">{{ product.description }}</p>
+          </div>
+          <div class="col-lg-5">
+            <dl class="spec-list">
+              <dt>Brand</dt><dd>{{ product.brand }}</dd>
+              <dt>Category</dt><dd><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></dd>
+              <dt>Availability</dt><dd>{% if product.in_stock %}{{ product.stock }} in stock{% else %}Out of stock{% endif %}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0">
+        {% if reviews %}
+          <div class="row g-4 g-xl-5">
+            <div class="col-md-4">
+              <div class="rating-summary">
+                <p class="rating-summary__score mb-1">{{ product.rating_avg|floatformat:1 }}</p>
+                {% stars product.rating_avg size="lg" %}
+                <p class="text-muted small mt-1">Based on {{ product.rating_count }} review{{ product.rating_count|pluralize }}</p>
+                <div class="d-grid gap-2 mt-3">
+                  {% for row in breakdown %}
+                    <div class="rating-bar">
+                      <span>{{ row.stars }} star</span>
+                      <span class="rating-bar__track" role="img" aria-label="{{ row.percent }}% of reviews gave {{ row.stars }} stars">
+                        <span class="rating-bar__fill" style="width: {{ row.percent }}%"></span>
+                      </span>
+                      <span class="text-muted text-end">{{ row.count }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-8">
+              {% for review in reviews %}
+                <article class="review">
+                  <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    {% stars review.rating %}
+                    <strong>{{ review.user.get_full_name|default:review.user.username }}</strong>
+                  </div>
+                  <p class="review__meta mb-2">{{ review.created_at|date:"j M Y" }}</p>
+                  {% if review.comment %}<p class="mb-0">{{ review.comment }}</p>{% endif %}
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          {% include "partials/_empty_state.html" with icon="chat-square-text" title="No reviews yet" text="Bought this product? Your review helps other shoppers and improves recommendations." %}
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {% comment %}"You may also like" (recommendations) is added here in Phase 4.{% endcomment %}
+</div>
+{% endblock %}

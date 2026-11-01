@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}RecoMart: shopping that learns what you like{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6 hero__copy">
+        <h1>Shopping that learns what you like</h1>
+        <p>Browse {{ product_total }} products across {{ categories|length }} categories. Every product you open teaches RecoMart a little more about your taste, so suggestions get sharper as you shop.</p>
+        <form class="hero-search" action="{% url 'store:product_list' %}" method="get" role="search">
+          <label for="hero-search" class="visually-hidden">Search products</label>
+          <input id="hero-search" class="form-control" type="search" name="q" placeholder="Search products" autocomplete="off">
+          <button class="btn btn-primary btn-lg" type="submit">Search</button>
+        </form>
+        {% if not user.is_authenticated %}
+          <p class="hero__note"><a href="{% url 'accounts:register' %}">Create an account</a> to get recommendations based on everything you browse.</p>
+        {% endif %}
+      </div>
+
+      {% if hero %}
+      <div class="col-lg-6 d-none d-md-block">
+        <div class="cluster-map" role="group" aria-label="Products grouped by similarity">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            {% for cluster in hero.clusters %}
+              <circle class="halo" cx="{{ cluster.cx }}" cy="{{ cluster.cy }}" r="21"></circle>
+            {% endfor %}
+            {% for x1, y1, x2, y2 in hero.bridges %}
+              <line class="bridge" x1="{{ x1 }}" y1="{{ y1 }}" x2="{{ x2 }}" y2="{{ y2 }}"></line>
+            {% endfor %}
+            {% for cluster in hero.clusters %}
+              {% for x1, y1, x2, y2 in cluster.edges %}
+                <line class="edge" x1="{{ x1 }}" y1="{{ y1 }}" x2="{{ x2 }}" y2="{{ y2 }}"></line>
+              {% endfor %}
+            {% endfor %}
+          </svg>
+          {% for cluster in hero.clusters %}
+            <span class="cluster-label" style="left: {{ cluster.label_x }}%; top: {{ cluster.label_y }}%; --i: {{ forloop.counter0 }};">{{ cluster.name }}</span>
+            {% for node in cluster.nodes %}
+              <a class="cluster-node" href="{{ node.product.get_absolute_url }}" title="{{ node.product.name }}"
+                 style="left: {{ node.x }}%; top: {{ node.y }}%; --i: calc({{ forloop.parentloop.counter0 }} * 3 + {{ forloop.counter0 }});">
+                <img src="{{ node.product.image.url }}" alt="{{ node.product.name }}" width="120" height="120">
+              </a>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="categories-heading">
+  <div class="container">
+    <div class="section-head">
+      <h2 id="categories-heading">Shop by category</h2>
+    </div>
+    <div class="category-grid">
+      {% for cat in categories %}
+        <a class="category-tile" href="{{ cat.get_absolute_url }}">
+          <span class="category-tile__icon"><i class="bi bi-{{ cat.icon }}" aria-hidden="true"></i></span>
+          <span class="category-tile__name">{{ cat.name }}</span>
+          <span class="category-tile__count">{{ cat.product_count }} products</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% comment %}"Recommended for you" is added here in Phase 5.{% endcomment %}
+
+{% if trending %}
+<section class="section" aria-labelledby="trending-heading">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2 id="trending-heading">Trending now</h2>
+        <p>What shoppers have been viewing and buying this month.</p>
+      </div>
+      <a href="{% url 'store:product_list' %}?sort=popular">See all products</a>
+    </div>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+      {% for product in trending %}
+        <div class="col">{% include "partials/_product_card.html" %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if deals %}
+<section class="section" aria-labelledby="deals-heading">
+  <div class="container">
+    <div class="deals-band">
+      <div class="section-head">
+        <div>
+          <h2 id="deals-heading">Today's deals</h2>
+          <p>The biggest discounts on products that are in stock.</p>
+        </div>
+        <a href="{% url 'store:product_list' %}?sort=discount">See all deals</a>
+      </div>
+      <div class="row row-cols-2 row-cols-lg-4 g-3">
+        {% for product in deals %}
+          <div class="col">{% include "partials/_product_card.html" with deal=True %}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
