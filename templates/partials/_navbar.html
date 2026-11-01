@@ -2,7 +2,7 @@
 <header class="site-header">
   <div class="container">
     <div class="site-header__bar">
-      <a class="brand" href="{% url 'store:home' %}">
+      <a class="brand" href="{% url 'store:home' %}" translate="no">
         <img src="{% static 'img/logo.svg' %}" alt="" width="34" height="34">
         RecoMart
       </a>
@@ -17,7 +17,7 @@
       <nav class="header-actions" aria-label="Account">
         {% if user.is_authenticated %}
           <div class="dropdown">
-            <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu for {{ user.first_name|default:user.username }}">
               <i class="bi bi-person-circle" aria-hidden="true"></i>
               <span class="icon-btn__label">{{ user.first_name|default:user.username }}</span>
             </button>
@@ -36,7 +36,7 @@
             </ul>
           </div>
         {% else %}
-          <a class="icon-btn" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">
+          <a class="icon-btn" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" aria-label="Log in">
             <i class="bi bi-person" aria-hidden="true"></i>
             <span class="icon-btn__label">Log in</span>
           </a>

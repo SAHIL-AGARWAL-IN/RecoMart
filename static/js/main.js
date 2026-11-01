@@ -64,6 +64,17 @@ document.addEventListener("DOMContentLoaded", () => {
     select.addEventListener("change", () => select.form.requestSubmit());
   });
 
+  // After a form fails validation on the server, put the cursor in the first invalid field
+  const firstInvalid = document.querySelector("form .is-invalid");
+  if (firstInvalid) firstInvalid.focus();
+
+  // Deep link to a tab: /product/x/#reviews opens the Reviews tab, and switching tabs updates the URL
+  document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
+    const name = tab.id.replace(/-tab$/, "");
+    if (location.hash === `#${name}`) bootstrap.Tab.getOrCreateInstance(tab).show();
+    tab.addEventListener("shown.bs.tab", () => history.replaceState(null, "", `#${name}`));
+  });
+
   // Links that open a Bootstrap tab, e.g. the star rating jumps to the Reviews tab
   document.querySelectorAll("[data-open-tab]").forEach((link) => {
     link.addEventListener("click", (event) => {

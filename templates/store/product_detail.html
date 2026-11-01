@@ -19,7 +19,7 @@
       <div class="gallery" data-gallery>
         <div class="gallery__main">
           {% if gallery %}
-            <img src="{{ gallery.0 }}" alt="{{ product.name }}" width="800" height="800" data-gallery-main>
+            <img src="{{ gallery.0 }}" alt="{{ product.name }}" width="800" height="800" fetchpriority="high" data-gallery-main>
           {% endif %}
         </div>
         {% if gallery|length > 1 %}
