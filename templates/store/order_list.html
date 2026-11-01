@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load store_tags %}
+
+{% block title %}Your orders | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <h1 class="mb-4">Your orders</h1>
+  {% if orders %}
+    <div class="d-grid gap-3">
+      {% for order in orders %}
+        <article class="order-card">
+          <header class="order-card__head">
+            <div>
+              <h2 class="h6 mb-1">Order {{ order.order_number }}</h2>
+              <p class="text-muted small mb-0">Placed {{ order.created_at|date:"j M Y" }}, paid by {{ order.get_payment_method_display }}</p>
+            </div>
+            <span class="status-pill status-pill--{{ order.status }}">{{ order.get_status_display }}</span>
+          </header>
+          <ul class="order-card__items">
+            {% for item in order.items.all %}
+              <li>
+                {% if item.product.image %}<img src="{{ item.product.image.url }}" alt="" width="48" height="48" loading="lazy">{% endif %}
+                <a href="{{ item.product.get_absolute_url }}">{{ item.product_name }}</a>
+                <span class="text-muted">× {{ item.quantity }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <footer class="order-card__foot">Total <strong>{{ order.total|inr }}</strong></footer>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% url 'store:product_list' as shop_url %}
+    {% include "partials/_empty_state.html" with icon="box-seam" title="No orders yet" text="When you place an order, you can track it here." action_url=shop_url action_label="Start shopping" %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Your wishlist | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <header class="mb-4">
+    <h1 class="mb-1">Your wishlist</h1>
+    {% if products %}<p class="text-muted mb-0">{{ products|length }} saved product{{ products|length|pluralize }}</p>{% endif %}
+  </header>
+  {% if products %}
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xxl-5 g-3">
+      {% for product in products %}
+        <div class="col">{% include "partials/_product_card.html" %}</div>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% url 'store:product_list' as shop_url %}
+    {% include "partials/_empty_state.html" with icon="heart" title="Nothing saved yet" text="Tap the heart on any product to save it here for later." action_url=shop_url action_label="Browse products" %}
+  {% endif %}
+</div>
+{% endblock %}
