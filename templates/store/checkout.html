@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static store_tags %}
+
+{% block title %}Checkout | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <nav aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'store:cart' %}">Cart</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+    </ol>
+  </nav>
+  <h1 class="mb-4">Checkout</h1>
+
+  <form method="post" novalidate data-checkout-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <section class="buy-box mb-4" aria-labelledby="address-title">
+          <h2 class="h5 mb-3" id="address-title">Delivery address</h2>
+          <div class="row gx-3">
+            <div class="col-sm-7">{% include "partials/_field.html" with field=form.full_name %}</div>
+            <div class="col-sm-5">{% include "partials/_field.html" with field=form.phone %}</div>
+            <div class="col-12">{% include "partials/_field.html" with field=form.address_line %}</div>
+            <div class="col-sm-5">{% include "partials/_field.html" with field=form.city %}</div>
+            <div class="col-sm-4">{% include "partials/_field.html" with field=form.state %}</div>
+            <div class="col-sm-3">{% include "partials/_field.html" with field=form.pincode %}</div>
+          </div>
+        </section>
+
+        <section class="buy-box" aria-labelledby="payment-title">
+          <h2 class="h5 mb-1" id="payment-title">Payment</h2>
+          <p class="demo-note"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Demo store: payments are simulated and nothing is charged. Don't enter real card details.</p>
+
+          <fieldset>
+            <legend class="visually-hidden">Payment method</legend>
+            <div class="pay-options">
+              {% for radio in form.payment_method %}
+                <label class="pay-option" for="{{ radio.id_for_label }}">
+                  {{ radio.tag }}
+                  <i class="bi {% if radio.data.value == 'upi' %}bi-phone{% elif radio.data.value == 'card' %}bi-credit-card{% else %}bi-cash-coin{% endif %}" aria-hidden="true"></i>
+                  <span>{{ radio.choice_label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </fieldset>
+
+          <div class="pay-panel" data-payment-panel="upi">
+            {% include "partials/_field.html" with field=form.upi_id %}
+          </div>
+          <div class="pay-panel" data-payment-panel="card">
+            {% include "partials/_field.html" with field=form.card_number %}
+            <div class="row gx-3">
+              <div class="col-7">{% include "partials/_field.html" with field=form.card_expiry %}</div>
+              <div class="col-5">{% include "partials/_field.html" with field=form.card_cvv %}</div>
+            </div>
+            <p class="small text-muted mb-0">Test card: 4111 1111 1111 1111, any future expiry, any 3-digit CVV. Only the last 4 digits are kept.</p>
+          </div>
+          <div class="pay-panel" data-payment-panel="cod">
+            <p class="mb-0 text-muted">Pay in cash when your order arrives.</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-5">
+        <aside class="buy-box order-summary" aria-labelledby="summary-title">
+          <h2 class="h5 mb-3" id="summary-title">Your order</h2>
+          <ul class="mini-lines">
+            {% for item in totals.items %}
+              <li>
+                {% if item.product.image %}<img src="{{ item.product.image.url }}" alt="" width="48" height="48">{% endif %}
+                <span class="mini-lines__name">{{ item.product.name }} <span class="text-muted">× {{ item.quantity }}</span></span>
+                <span>{{ item.line_total|inr }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <dl class="summary-list">
+            <dt>Items ({{ totals.count }})</dt><dd>{{ totals.subtotal|inr }}</dd>
+            <dt>Delivery</dt><dd>{% if totals.shipping %}{{ totals.shipping|inr }}{% else %}Free{% endif %}</dd>
+            <dt class="summary-list__total">Total</dt><dd class="summary-list__total">{{ totals.total|inr }}</dd>
+          </dl>
+          <button class="btn btn-primary btn-lg w-100" type="submit" data-submit-label="Place order">
+            Place order
+          </button>
+        </aside>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/checkout.js' %}"></script>{% endblock %}

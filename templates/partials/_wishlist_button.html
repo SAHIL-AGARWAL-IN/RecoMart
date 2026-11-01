@@ -1,0 +1,7 @@
+{# Heart toggle. aria-pressed tells screen readers (and the CSS) whether the product is saved. #}
+<button class="heart-btn {{ extra_class }}" type="button" data-wishlist-toggle="{{ product.id }}"
+        aria-pressed="{% if product.id in wishlist_ids %}true{% else %}false{% endif %}"
+        aria-label="Save {{ product.name }} to wishlist">
+  <i class="bi bi-heart heart-btn__off" aria-hidden="true"></i>
+  <i class="bi bi-heart-fill heart-btn__on" aria-hidden="true"></i>
+</button>

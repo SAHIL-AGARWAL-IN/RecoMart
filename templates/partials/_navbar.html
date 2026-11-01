@@ -13,7 +13,7 @@
           <label for="site-search" class="visually-hidden">Search products</label>
           <i class="bi bi-search" aria-hidden="true"></i>
           <input id="site-search" class="form-control" type="search" name="q" value="{{ request.GET.q }}"
-                 placeholder="Search phones, books, sneakers…" autocomplete="off">
+                 placeholder="Search phones, books, sneakers…" autocomplete="off" data-live-search>
         </form>
       {% else %}
         <span class="header-spacer" aria-hidden="true"></span>

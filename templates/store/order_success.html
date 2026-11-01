@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load store_tags %}
+
+{% block title %}Order placed | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <section class="success-panel" aria-labelledby="success-title">
+    <span class="success-panel__icon"><i class="bi bi-bag-check" aria-hidden="true"></i></span>
+    <h1 id="success-title">Order placed</h1>
+    <p>Thanks, {{ order.full_name }}. Your order <strong>{{ order.order_number }}</strong> for <strong>{{ order.total|inr }}</strong> is confirmed and will be delivered to {{ order.city }}.</p>
+    {% if order.payment_ref %}<p class="small text-muted">Simulated payment reference: {{ order.payment_ref }}</p>{% endif %}
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+      <a class="btn btn-primary" href="{% url 'store:order_detail' order.pk %}">Track this order</a>
+      <a class="btn btn-outline-primary" href="{% url 'store:product_list' %}">Continue shopping</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

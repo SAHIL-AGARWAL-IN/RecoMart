@@ -384,6 +384,7 @@ main { min-height: 60vh; }
 .hero__copy h1 { max-width: 15ch; margin-bottom: 1rem; }
 .hero__copy p { max-width: 46ch; color: var(--rm-muted); font-size: 1.075rem; margin-bottom: 1.75rem; }
 .hero-search {
+  position: relative; /* anchors the live search dropdown */
   display: flex;
   gap: 0.5rem;
   max-width: 520px;
