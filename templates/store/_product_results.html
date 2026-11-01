@@ -1,0 +1,17 @@
+{# The product grid. Rendered inside product_list.html, and re-rendered by /api/products/ for AJAX filters. #}
+<p class="results-count text-muted mb-3" id="results-count" aria-live="polite">
+  {% if page.paginator.count %}
+    Showing {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }} products
+  {% else %}No products found{% endif %}
+</p>
+{% if page.object_list %}
+  <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 row-cols-xxl-5 g-3">
+    {% for product in page.object_list %}
+      <div class="col">{% include "partials/_product_card.html" %}</div>
+    {% endfor %}
+  </div>
+  {% include "partials/_pagination.html" %}
+{% else %}
+  {% url 'store:product_list' as all_url %}
+  {% include "partials/_empty_state.html" with icon="search" title="No products match these filters" text="Try a wider price range, a lower rating, or a different search word." action_url=all_url action_label="Show all products" %}
+{% endif %}

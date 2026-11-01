@@ -1,34 +1,62 @@
 {% extends "base.html" %}
-{% load store_tags %}
+{% load static store_tags %}
 
 {% block title %}Your cart | RecoMart{% endblock %}
 
 {% block content %}
 <div class="container pt-4">
   <h1 class="mb-4">Your cart</h1>
-  {% if items %}
-    <div class="row g-4">
+  {% if totals.items %}
+    <div class="row g-4" data-cart-page data-update-url="{% url 'store:api_cart_update' %}" data-remove-url="{% url 'store:api_cart_remove' %}">
       <div class="col-lg-8">
-        <ul class="line-items">
-          {% for item in items %}
-            <li class="line-item">
+        <ul class="line-items" aria-label="Items in your cart">
+          {% for item in totals.items %}
+            <li class="line-item" data-cart-line="{{ item.product_id }}">
               <a class="line-item__media" href="{{ item.product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
                 {% if item.product.image %}<img src="{{ item.product.image.url }}" alt="" width="88" height="88" loading="lazy">{% endif %}
               </a>
               <div class="line-item__info">
                 <a class="line-item__name" href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a>
-                <span class="text-muted small">Quantity {{ item.quantity }} × {{ item.product.effective_price|inr }}</span>
+                <span class="text-muted small">{{ item.product.effective_price|inr }} each{% if item.product.stock <= 5 %}, only {{ item.product.stock }} left{% endif %}</span>
+                <div class="line-item__actions">
+                  <div class="stepper" role="group" aria-label="Quantity of {{ item.product.name }}">
+                    <button type="button" class="stepper__btn" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash" aria-hidden="true"></i></button>
+                    <input class="stepper__input" type="number" inputmode="numeric" min="1" max="{{ item.product.stock }}"
+                           value="{{ item.quantity }}" data-qty-input aria-label="Quantity">
+                    <button type="button" class="stepper__btn" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus" aria-hidden="true"></i></button>
+                  </div>
+                  <button type="button" class="btn btn-quiet btn-sm" data-remove><i class="bi bi-trash3 me-1" aria-hidden="true"></i>Remove</button>
+                </div>
               </div>
-              <strong class="line-item__total">{{ item.line_total|inr }}</strong>
+              <strong class="line-item__total" data-line-total>{{ item.line_total|inr }}</strong>
             </li>
           {% endfor %}
         </ul>
+        {% comment %}"Frequently bought together" is added below the cart in Phase 5.{% endcomment %}
       </div>
+
       <div class="col-lg-4">
-        <div class="buy-box">
-          <div class="d-flex justify-content-between mb-3"><span>Subtotal</span><strong>{{ subtotal|inr }}</strong></div>
-          <button class="btn btn-primary btn-lg w-100" type="button" disabled>Checkout</button>
-        </div>
+        <aside class="buy-box order-summary" aria-labelledby="summary-title">
+          <h2 class="h5 mb-3" id="summary-title">Order summary</h2>
+          <div class="free-ship" data-free-ship>
+            <p class="small mb-2" data-free-ship-text>
+              {% if totals.free_shipping_remaining %}Add <strong>{{ totals.free_shipping_remaining|inr }}</strong> more for free delivery.{% else %}<i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>You've unlocked free delivery.{% endif %}
+            </p>
+            <div class="free-ship__track" role="progressbar" aria-label="Progress to free delivery"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ totals.free_shipping_progress }}">
+              <span class="free-ship__fill" style="width: {{ totals.free_shipping_progress }}%"></span>
+            </div>
+          </div>
+          <dl class="summary-list">
+            <dt>Items (<span data-summary="count">{{ totals.count }}</span>)</dt><dd data-summary="subtotal">{{ totals.subtotal|inr }}</dd>
+            <dt>Delivery</dt><dd data-summary="shipping">{% if totals.shipping %}{{ totals.shipping|inr }}{% else %}Free{% endif %}</dd>
+            <dt class="summary-list__total">Total</dt><dd class="summary-list__total" data-summary="total">{{ totals.total|inr }}</dd>
+          </dl>
+          <a class="btn btn-primary btn-lg w-100" href="{% url 'store:checkout' %}">
+            {% if user.is_authenticated %}Go to checkout{% else %}Log in to check out{% endif %}
+          </a>
+          <p class="small text-muted mt-3 mb-0"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Payment is simulated. No real money is charged.</p>
+        </aside>
       </div>
     </div>
   {% else %}
@@ -37,3 +65,5 @@
   {% endif %}
 </div>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/cart.js' %}"></script>{% endblock %}

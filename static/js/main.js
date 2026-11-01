@@ -41,6 +41,66 @@ function showToast(message, icon = "check-circle") {
   bootstrap.Toast.getOrCreateInstance(toast, { delay: 3500 }).show();
 }
 
+// ---------- Navbar badges ----------
+function setBadge(selector, count) {
+  document.querySelectorAll(selector).forEach((badge) => {
+    badge.textContent = count;
+    badge.hidden = !count;
+  });
+}
+
+// ---------- Add to cart and wishlist hearts (event delegation: works for AJAX-loaded cards too) ----------
+document.addEventListener("click", async (event) => {
+  const addButton = event.target.closest("[data-add-to-cart]");
+  if (addButton) {
+    const qtyInput = addButton.dataset.quantityInput && document.querySelector(addButton.dataset.quantityInput);
+    addButton.classList.add("is-busy");
+    try {
+      const data = await fetchJSON(document.body.dataset.cartAddUrl, {
+        method: "POST",
+        body: { product_id: addButton.dataset.addToCart, quantity: qtyInput ? qtyInput.value : 1 },
+      });
+      setBadge("[data-cart-count]", data.cart.count);
+      addButton.classList.add("is-added");
+      showToast(data.message, "bag-check");
+    } catch (error) {
+      showToast(error.message, "exclamation-circle");
+    } finally {
+      addButton.classList.remove("is-busy");
+    }
+    return;
+  }
+
+  const heart = event.target.closest("[data-wishlist-toggle]");
+  if (heart) {
+    const url = document.body.dataset.wishlistUrl.replace("/0/", `/${heart.dataset.wishlistToggle}/`);
+    try {
+      const data = await fetchJSON(url, { method: "POST" });
+      // Update every heart for this product on the page (card and buy box)
+      document.querySelectorAll(`[data-wishlist-toggle="${heart.dataset.wishlistToggle}"]`).forEach((h) => {
+        h.setAttribute("aria-pressed", data.wishlisted ? "true" : "false");
+        h.classList.toggle("is-pulsing", data.wishlisted);
+      });
+      setBadge("[data-wishlist-count]", data.count);
+      showToast(data.message, data.wishlisted ? "heart-fill" : "heart");
+    } catch (error) {
+      if (error.status === 401 && error.data.login_url) window.location.href = error.data.login_url;
+      else showToast(error.message, "exclamation-circle");
+    }
+    return;
+  }
+
+  // Quantity steppers: +/- buttons change the number box next to them, within its min and max
+  const step = event.target.closest(".stepper [data-step]");
+  if (step) {
+    const input = step.closest(".stepper").querySelector("input");
+    const next = Number(input.value || 1) + Number(step.dataset.step);
+    const max = Number(input.max || Infinity);
+    input.value = Math.min(Math.max(next, Number(input.min || 1)), max);
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
   // Django messages rendered by the server
   document.querySelectorAll(".toast[data-autoshow]").forEach((el) => {
@@ -71,7 +131,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Deep link to a tab: /product/x/#reviews opens the Reviews tab, and switching tabs updates the URL
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
     const name = tab.id.replace(/-tab$/, "");
-    if (location.hash === `#${name}`) bootstrap.Tab.getOrCreateInstance(tab).show();
+    if (location.hash === `#${name}`) {
+      bootstrap.Tab.getOrCreateInstance(tab).show();
+      tab.scrollIntoView({ block: "start" });
+    }
     tab.addEventListener("shown.bs.tab", () => history.replaceState(null, "", `#${name}`));
   });
 

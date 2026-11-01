@@ -12,7 +12,7 @@
         <article class="order-card">
           <header class="order-card__head">
             <div>
-              <h2 class="h6 mb-1">Order {{ order.order_number }}</h2>
+              <h2 class="h6 mb-1"><a class="order-card__link" href="{% url 'store:order_detail' order.pk %}">Order {{ order.order_number }}</a></h2>
               <p class="text-muted small mb-0">Placed {{ order.created_at|date:"j M Y" }}, paid by {{ order.get_payment_method_display }}</p>
             </div>
             <span class="status-pill status-pill--{{ order.status }}">{{ order.get_status_display }}</span>
@@ -26,7 +26,10 @@
               </li>
             {% endfor %}
           </ul>
-          <footer class="order-card__foot">Total <strong>{{ order.total|inr }}</strong></footer>
+          <footer class="order-card__foot">
+            <a class="me-auto fw-semibold text-decoration-none" href="{% url 'store:order_detail' order.pk %}" aria-label="View details of order {{ order.order_number }}">View details</a>
+            <span>Total <strong>{{ order.total|inr }}</strong></span>
+          </footer>
         </article>
       {% endfor %}
     </div>

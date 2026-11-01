@@ -31,9 +31,10 @@
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#filters" aria-label="Close filters"></button>
         </div>
         <div class="offcanvas-body d-block">
-          <form class="filter-panel w-100" method="get" action="{% if category %}{{ category.get_absolute_url }}{% else %}{% url 'store:product_list' %}{% endif %}" id="filter-form">
+          {# Works as a normal GET form without JavaScript; filters.js upgrades it to AJAX. #}
+          <form class="filter-panel w-100" method="get" id="filter-form" data-ajax-filters
+                action="{% if category %}{{ category.get_absolute_url }}{% else %}{% url 'store:product_list' %}{% endif %}">
             {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
-            <input type="hidden" name="sort" value="{{ filters.sort }}">
 
             <nav class="filter-group" aria-labelledby="category-filter-title">
               <h2 class="filter-title" id="category-filter-title">Category</h2>
@@ -80,42 +81,28 @@
       </div>
     </aside>
 
-    <section class="col-lg-9" aria-labelledby="results-count">
+    <section class="col-lg-9" aria-label="Products">
       <div class="list-toolbar">
-        <p class="mb-0 text-muted" id="results-count">
-          {% if page.paginator.count %}
-            Showing {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }} products
-          {% else %}No products found{% endif %}
-        </p>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filters" aria-controls="filters">
-            <i class="bi bi-sliders me-1" aria-hidden="true"></i>Filters
-          </button>
-          <label class="visually-hidden" for="sort">Sort products</label>
-          <select class="form-select w-auto" id="sort" name="sort" form="sort-form" data-autosubmit>
+        <button class="btn btn-outline-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filters" aria-controls="filters">
+          <i class="bi bi-sliders me-1" aria-hidden="true"></i>Filters
+        </button>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <label class="text-muted small text-nowrap" for="sort">Sort by</label>
+          {# form="filter-form" makes the sort box part of the filter form, even though it sits outside it. #}
+          <select class="form-select w-auto" id="sort" name="sort" form="filter-form" data-autosubmit>
             {% for value, label in sort_options %}
               <option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
-          <form id="sort-form" method="get" class="d-none">
-            {% for key, value in request.GET.items %}{% if key != "sort" and key != "page" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
-            <noscript><button type="submit">Sort</button></noscript>
-          </form>
         </div>
       </div>
 
-      {% if page.object_list %}
-        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 row-cols-xxl-5 g-3">
-          {% for product in page.object_list %}
-            <div class="col">{% include "partials/_product_card.html" %}</div>
-          {% endfor %}
-        </div>
-        {% include "partials/_pagination.html" %}
-      {% else %}
-        {% url 'store:product_list' as all_url %}
-        {% include "partials/_empty_state.html" with icon="search" title="No products match these filters" text="Try a wider price range, a lower rating, or a different search word." action_url=all_url action_label="Show all products" %}
-      {% endif %}
+      <div id="product-results" data-results-url="{% url 'store:api_products' %}"{% if category %} data-category="{{ category.slug }}"{% endif %}>
+        {% include "store/_product_results.html" %}
+      </div>
     </section>
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}{% load static %}<script src="{% static 'js/filters.js' %}"></script>{% endblock %}

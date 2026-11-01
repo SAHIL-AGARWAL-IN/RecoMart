@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load store_tags %}
+
+{% block title %}Order {{ order.order_number }} | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <nav aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'store:order_list' %}">Your orders</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ order.order_number }}</li>
+    </ol>
+  </nav>
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <h1 class="mb-0">Order {{ order.order_number }}</h1>
+    <span class="status-pill status-pill--{{ order.status }}">{{ order.get_status_display }}</span>
+  </div>
+
+  <ol class="timeline" aria-label="Delivery progress">
+    {% for step in timeline %}
+      <li class="timeline__step{% if step.done %} is-done{% endif %}">
+        <span class="timeline__dot" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+        <span>{{ step.label }}</span>
+        <span class="visually-hidden">{% if step.done %}(done){% else %}(not yet){% endif %}</span>
+      </li>
+    {% endfor %}
+  </ol>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <ul class="line-items" aria-label="Items in this order">
+        {% for item in order.items.all %}
+          <li class="line-item">
+            <a class="line-item__media" href="{{ item.product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+              {% if item.product.image %}<img src="{{ item.product.image.url }}" alt="" width="88" height="88" loading="lazy">{% endif %}
+            </a>
+            <div class="line-item__info">
+              <a class="line-item__name" href="{{ item.product.get_absolute_url }}">{{ item.product_name }}</a>
+              <span class="text-muted small">{{ item.quantity }} × {{ item.unit_price|inr }}</span>
+            </div>
+            <strong class="line-item__total">{{ item.line_total|inr }}</strong>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="col-lg-4">
+      <aside class="buy-box">
+        <h2 class="h6">Delivery to</h2>
+        <p class="mb-3">{{ order.full_name }}<br>{{ order.address_line }}<br>{{ order.city }}, {{ order.state }} {{ order.pincode }}<br>{{ order.phone }}</p>
+        <h2 class="h6">Payment</h2>
+        <p class="mb-3">{{ order.get_payment_method_display }}{% if order.payment_ref %}<br><span class="small text-muted">{{ order.payment_ref }}</span>{% endif %}</p>
+        <dl class="summary-list mb-0">
+          <dt>Items</dt><dd>{{ order.subtotal|inr }}</dd>
+          <dt>Delivery</dt><dd>{% if order.shipping_fee %}{{ order.shipping_fee|inr }}{% else %}Free{% endif %}</dd>
+          <dt class="summary-list__total">Total</dt><dd class="summary-list__total">{{ order.total|inr }}</dd>
+        </dl>
+        <p class="small text-muted mt-3 mb-0">Placed {{ order.created_at|date:"j M Y, g:i A" }}</p>
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}
