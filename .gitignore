@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# Secrets
+.env
+
+# Trained ML models (regenerate with: python manage.py train_recommender)
+recommender/models/*.joblib
+
+# Tooling
+.coverage
+htmlcov/
+.idea/
+.vscode/
+.playwright-mcp/
