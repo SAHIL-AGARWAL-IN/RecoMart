@@ -1,14 +1,15 @@
 """Storefront pages. Views stay thin: queries and rules live in services.py."""
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
+from . import cart as cart_service
 from . import services
-from .cart import get_cart
-from .models import Category, Interaction, Product
-
-PRODUCTS_PER_PAGE = 20  # divisible by 4 and 5, so full rows at both grid widths
+from .forms import CheckoutForm, ReviewForm
+from .models import Category, Interaction, Order, Product, Review
 
 # The home hero draws three product "clusters", a picture of what K-Means does.
 # Positions are percentages of a square box: label (x, y) and three product nodes.
@@ -62,7 +63,7 @@ def home(request):
 def product_list(request, slug=None):
     category = get_object_or_404(Category, slug=slug) if slug else None
     filters = services.parse_filters(request.GET, category=category)
-    page = Paginator(services.filter_products(filters), PRODUCTS_PER_PAGE).get_page(request.GET.get("page"))
+    page = Paginator(services.filter_products(filters), services.PRODUCTS_PER_PAGE).get_page(request.GET.get("page"))
     return render(request, "store/product_list.html", {
         "category": category,
         "categories": Category.objects.all(),
@@ -88,25 +89,87 @@ def product_detail(request, slug):
                  for s in range(5, 0, -1)]
     gallery = [product.image.url] if product.image else []
     gallery += [image.image.url for image in product.images.all()]
+    my_review = reviews.filter(user=request.user).first() if request.user.is_authenticated else None
 
     return render(request, "store/product_detail.html", {
         "product": product,
         "gallery": gallery,
         "reviews": reviews[:10],
+        "verified_ids": set(Order.objects.filter(items__product=product).values_list("user_id", flat=True)),
         "breakdown": breakdown,
         "savings": product.price - product.effective_price,
         "free_shipping_threshold": services.FREE_SHIPPING_THRESHOLD,
+        "review_form": ReviewForm(instance=my_review),
+        "my_review": my_review,
     })
+
+
+@login_required
+@require_POST
+def submit_review(request, slug):
+    """Create or update the shopper's one review of this product."""
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+    existing = Review.objects.filter(user=request.user, product=product).first()
+    form = ReviewForm(request.POST, instance=existing)
+    if form.is_valid():
+        review = form.save(commit=False)
+        review.user, review.product = request.user, product
+        review.save()  # Review.save() also refreshes the product's average rating
+        if existing is None:
+            services.log_interaction(request, product, Interaction.Type.REVIEW)
+        messages.success(request, "Review updated." if existing else "Thanks! Your review is posted.")
+    else:
+        messages.error(request, "Choose a star rating from 1 to 5 to post your review.")
+    return redirect(f"{product.get_absolute_url()}#reviews")
 
 
 def cart(request):
-    """Read-only cart for now; adding, updating and removing items arrives in Phase 3."""
-    current = get_cart(request)
-    items = current.items.select_related("product", "product__category") if current else []
-    return render(request, "store/cart.html", {
-        "items": items,
-        "subtotal": current.subtotal if current else 0,
-    })
+    totals = cart_service.summary(cart_service.get_cart(request))
+    return render(request, "store/cart.html", {"totals": totals})
+
+
+@login_required
+def checkout(request):
+    current = cart_service.get_cart(request)
+    totals = cart_service.summary(current)
+    if not totals["items"]:
+        messages.info(request, "Your cart is empty. Add something before checking out.")
+        return redirect("store:cart")
+
+    form = CheckoutForm(request.POST or None, initial=_checkout_initial(request.user))
+    if request.method == "POST" and form.is_valid():
+        try:
+            order = services.place_order(request.user, current, form.shipping_data(),
+                                         form.cleaned_data["payment_method"], form.payment_detail())
+        except services.OutOfStockError as error:
+            messages.error(request, str(error))
+            return redirect("store:cart")
+        return redirect("store:order_success", pk=order.pk)
+    return render(request, "store/checkout.html", {"form": form, "totals": totals})
+
+
+def _checkout_initial(user):
+    """Prefill the address from the shopper's last order, or the name from their profile."""
+    last = user.orders.first()
+    if last:
+        return {field: getattr(last, field) for field in CheckoutForm.SHIPPING_FIELDS}
+    return {"full_name": user.get_full_name(), "phone": user.phone}
+
+
+@login_required
+def order_success(request, pk):
+    order = get_object_or_404(Order.objects.prefetch_related("items__product"), pk=pk, user=request.user)
+    return render(request, "store/order_success.html", {"order": order})
+
+
+@login_required
+def order_detail(request, pk):
+    # Filtering by user=request.user makes other people's orders a 404, so nothing leaks.
+    order = get_object_or_404(Order.objects.prefetch_related("items__product"), pk=pk, user=request.user)
+    statuses = [value for value, _ in Order.Status.choices]
+    reached = statuses.index(order.status)
+    timeline = [{"label": label, "done": index <= reached} for index, (_, label) in enumerate(Order.Status.choices)]
+    return render(request, "store/order_detail.html", {"order": order, "timeline": timeline})
 
 
 @login_required
