@@ -1,16 +1,20 @@
 """Store business rules shared by views, checkout and seed data."""
+import secrets
+import string
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Case, F, FloatField, IntegerField, Q, Sum, Value, When
 from django.db.models.functions import Cast, Coalesce
 from django.utils import timezone
 
-from .models import Interaction, Product
+from .models import Interaction, Order, OrderItem, Product
 
 FREE_SHIPPING_THRESHOLD = Decimal("499")
 SHIPPING_FEE = Decimal("49")
+PRODUCTS_PER_PAGE = 20  # divisible by 4 and 5, so full rows at both grid widths
 RECENTLY_VIEWED_KEY = "recently_viewed"
 RECENTLY_VIEWED_MAX = 12
 
@@ -131,3 +135,68 @@ def filter_products(filters):
     if filters["rating"]:
         products = products.filter(rating_avg__gte=filters["rating"])
     return products.order_by(*SORT_OPTIONS[filters["sort"]][1], "id")
+
+
+# -------------------------------------------------------------------- checkout
+class EmptyCartError(Exception):
+    pass
+
+
+class OutOfStockError(Exception):
+    def __init__(self, product):
+        self.product = product
+        super().__init__(f"Sorry, only {product.stock} of {product.name} left in stock. Please update your cart.")
+
+
+def simulated_payment_ref(method, payment_detail=""):
+    """A fake transaction id. No real gateway is contacted and card numbers are never stored."""
+    if method == Order.PaymentMethod.COD:
+        return ""
+    code = "SIM-" + "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+    if method == Order.PaymentMethod.CARD:
+        return f"{code} (card ending {payment_detail[-4:]})"
+    return code
+
+
+@transaction.atomic
+def place_order(user, cart, shipping, payment_method, payment_detail=""):
+    """Turn the cart into an order. All-or-nothing: any failure rolls back every change.
+
+    Stock is decremented with a conditional UPDATE ("only if enough is left"), so two
+    shoppers can never buy the last item twice.
+    """
+    items = list(cart.items.select_related("product"))
+    if not items:
+        raise EmptyCartError("Your cart is empty.")
+
+    for item in items:
+        updated = Product.objects.filter(pk=item.product_id, stock__gte=item.quantity).update(
+            stock=F("stock") - item.quantity)
+        if not updated:
+            item.product.refresh_from_db(fields=["stock"])
+            raise OutOfStockError(item.product)
+
+    subtotal = sum((item.line_total for item in items), Decimal("0"))
+    fee = shipping_fee_for(subtotal)
+    order = Order.objects.create(
+        user=user, payment_method=payment_method,
+        payment_ref=simulated_payment_ref(payment_method, payment_detail),
+        subtotal=subtotal, shipping_fee=fee, total=subtotal + fee, **shipping,
+    )
+    OrderItem.objects.bulk_create([
+        OrderItem(order=order, product=item.product, product_name=item.product.name,
+                  unit_price=item.product.effective_price, quantity=item.quantity)
+        for item in items
+    ])
+    Interaction.objects.bulk_create([
+        Interaction(user=user, product=item.product, interaction_type=Interaction.Type.PURCHASE,
+                    quantity=item.quantity)
+        for item in items
+    ])
+    cart.items.all().delete()
+    return order
+
+
+def has_purchased(user, product):
+    """Used for the 'Verified purchase' badge on reviews."""
+    return user.is_authenticated and OrderItem.objects.filter(order__user=user, product=product).exists()
