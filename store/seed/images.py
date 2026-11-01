@@ -7,7 +7,7 @@ Every function returns WebP bytes for an 800x800 square image.
 import hashlib
 import io
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageColor, ImageDraw, ImageFilter, ImageFont
 
 SIZE = 800
 
@@ -76,8 +76,9 @@ def book_cover(title, author):
     _soft_shadow(canvas, (left + 14, top + 22, left + width + 14, top + height + 22), radius=10)
     draw = ImageDraw.Draw(canvas)
     draw.rounded_rectangle((left, top, left + width, top + height), radius=8, fill=cover)
-    # Spine shading on the left edge.
-    draw.rectangle((left, top, left + 26, top + height), fill=(0, 0, 0, 60))
+    # Spine: a darker shade of the cover colour on the left edge.
+    r, g, b = ImageColor.getrgb(cover)
+    draw.rectangle((left, top, left + 26, top + height), fill=(int(r * 0.6), int(g * 0.6), int(b * 0.6)))
     # Accent bars.
     draw.rectangle((left + 60, top + 70, left + width - 40, top + 76), fill="#F2B33D")
     draw.rectangle((left + 60, top + height - 120, left + width - 40, top + height - 117), fill="#F2B33D")
@@ -90,23 +91,26 @@ def book_cover(title, author):
 
 
 def toy_image(name):
-    """Playful geometric shapes on a pastel background, with the toy name."""
+    """Stacked building blocks and a ball on a pastel background, with the toy name."""
     canvas = Image.new("RGBA", (SIZE, SIZE), _pick(PASTELS, name))
-    main = _pick(TOY_COLOURS, name)
-    second = _pick(TOY_COLOURS, name[::-1])
-    third = _pick(TOY_COLOURS, name + "x")
+    colours = [_pick(TOY_COLOURS, name + str(i)) for i in range(4)]
+    blocks = [(150, 380, 350, 580), (370, 380, 570, 580), (260, 170, 460, 370)]
+    ball = (600, 480, 700, 580)
 
-    _soft_shadow(canvas, (190, 160, 610, 560), radius=60)
+    for box in blocks:
+        _soft_shadow(canvas, (box[0] + 8, box[1] + 14, box[2] + 8, box[3] + 14), radius=28)
     draw = ImageDraw.Draw(canvas)
-    draw.rounded_rectangle((190, 150, 610, 550), radius=60, fill=main)
-    draw.ellipse((420, 90, 640, 310), fill=second)
-    draw.polygon([(180, 560), (330, 330), (480, 560)], fill=third)
-    draw.ellipse((300, 280, 340, 320), fill="#FFFFFF")
-    draw.ellipse((460, 280, 500, 320), fill="#FFFFFF")
+    for (x1, y1, x2, y2), colour in zip(blocks, colours):
+        r, g, b = ImageColor.getrgb(colour)
+        draw.rounded_rectangle((x1, y1, x2, y2), radius=28, fill=colour)
+        lighter = tuple(int(c + (255 - c) * 0.45) for c in (r, g, b))
+        draw.rounded_rectangle((x1 + 50, y1 + 50, x2 - 50, y2 - 50), radius=18, fill=lighter)
+    draw.ellipse(ball, fill=colours[3])
+    draw.arc(ball, start=200, end=320, fill="#FFFFFF", width=8)
 
     font = _font(40)
     lines = _wrap(draw, name, font, SIZE - 160)[:2]
-    _draw_lines(draw, lines, font, 80, 620, "#2B2B2B", center_width=SIZE - 160)
+    _draw_lines(draw, lines, font, 80, 630, "#2B2B2B", center_width=SIZE - 160)
     return _to_webp(canvas.convert("RGB"))
 
 
