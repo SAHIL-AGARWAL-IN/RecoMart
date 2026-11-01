@@ -1,0 +1,16 @@
+{# Products this visitor opened recently (kept in the session, so it works for guests too). #}
+{% if recently_viewed %}
+<section class="section" aria-labelledby="recent-heading">
+  <div class="section-head">
+    <div>
+      <h2 id="recent-heading">Recently viewed</h2>
+      <p>Pick up where you left off.</p>
+    </div>
+  </div>
+  <div class="rec-track">
+    {% for product in recently_viewed %}
+      <div class="rec-track__item">{% include "partials/_product_card.html" %}</div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

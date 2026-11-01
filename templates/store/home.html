@@ -71,7 +71,14 @@
   </div>
 </section>
 
-{% comment %}"Recommended for you" is added here in Phase 5.{% endcomment %}
+{% if user.is_authenticated %}
+  <div class="container">
+    {% url "recommender:for_you" as for_you_url %}
+    {% include "partials/_rec_section.html" with url=for_you_url heading_id="for-you-heading" title="Recommended for you" subtitle="Based on what you've viewed, saved and bought recently." %}
+  </div>
+{% endif %}
+
+<div class="container">{% include "partials/_recently_viewed.html" %}</div>
 
 {% if trending %}
 <section class="section" aria-labelledby="trending-heading">
@@ -113,3 +120,5 @@
 </section>
 {% endif %}
 {% endblock %}
+
+{% block extra_js %}{% load static %}<script src="{% static 'js/recommendations.js' %}"></script>{% endblock %}
