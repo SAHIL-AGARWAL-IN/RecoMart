@@ -307,3 +307,67 @@ A: On a small fixed dataset with three obvious groups (phones, novels, cookware)
 
 **Q: What is a click-through rate (CTR)?**
 A: Clicks ÷ impressions. If "You may also like" is shown 1,000 times and opened 50 times, the CTR is 5%. We log both, and Phase 6 compares the A/B variants with it.
+
+---
+
+## Phase 5: Enhancements (personal feed, hybrid ranking, "Why this?", frequently bought together, recently viewed)
+
+### What we built
+- **Hybrid ranking.** Every recommendation strip is ordered by
+  `final = similarity × 0.60 + popularity × 0.25 + recency × 0.15`. The weights are in `settings.RECOMMENDER["HYBRID_WEIGHTS"]`.
+  - *similarity*: the cosine similarity from the trained model (0–1)
+  - *popularity*: weighted shopper activity in the last 30 days (purchase 3, cart/wishlist/review 2, view 1), log-scaled to 0–1 and cached for 5 minutes
+  - *recency*: `exp(−days since the product was added / 90)`, so new products get a small boost
+- **"Recommended for you"** on the home page for logged-in shoppers:
+  1. Take their last 20 interactions. Each is weighted by type and halves in weight every 30 days.
+  2. Average those products' feature vectors into one **taste vector**.
+  3. Find the products closest to it. Leave out anything they already bought or looked at.
+  4. Rank with the hybrid score.
+
+  Guests and brand-new shoppers get **Trending** instead.
+- **"Why this?" chips:** short reasons on each card. At most two are shown, checked in this order:
+  - *Same brand*
+  - *Popular with shoppers like you*: many shoppers looked at both products; only the 3 strongest per strip get it
+  - *Similar price*: within ±25%
+  - *Top rated*: rating ≥ 4.5
+  - *Trending*
+  - *New arrival*: added in the last 30 days
+
+  The personal feed says *Because you viewed X*.
+- **"Frequently bought together"** on the cart page counts how many past orders contain both a cart item and another product ("Bought together ×2"). If there's no purchase history yet, it falls back to similar products.
+- **"Recently viewed"** strips on the home and product pages use the session, so they work for guests too.
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| A weighted sum for the hybrid score | Easy to explain and tune. Each part is scaled to 0–1 first, so the weights mean what they say. |
+| Log-scale popularity | One very popular product shouldn't squash everyone else's score close to 0. |
+| Exponential recency decay | New arrivals get a fair chance, and the boost fades smoothly instead of switching off on a set day. |
+| Taste vector = weighted average of feature vectors | Reuses the trained model. A purchase counts 3× a view, and old activity counts less. |
+| Leave out things already bought or viewed | Recommendations should help you *discover*, not repeat your history. |
+| Rule-based "Why this?" chips | Machine-learning scores are hard to explain to shoppers. Simple, true reasons build trust and are easy to defend in a viva. |
+| Limit "shoppers like you" to the top 3 | With dense simulated data it was on every card, and a label on everything means nothing. |
+| Frequently-bought-together counts orders, not quantities | Buying 5 pens in one order shouldn't count as 5 "together" purchases. |
+
+### Likely viva questions
+**Q: What is a hybrid recommender?**
+A: One that combines several signals. Ours mixes *content similarity* (from the ML model) with *popularity* (what shoppers do) and *recency* (what's new). Pure similarity can recommend unpopular or out-of-date products; the mix balances this.
+
+**Q: How does "Recommended for you" work for a new user?**
+A: With no history we can't build a taste vector. That's the "cold start" problem. We show Trending (the most popular products this month) until they browse a few products.
+
+**Q: What is content-based vs collaborative filtering? Which do you use?**
+A:
+- *Content-based* recommends items similar to ones you liked, using item features: our TF-IDF/K-Means model.
+- *Collaborative* uses other users' behaviour: "people who bought X also bought Y".
+
+We use **both**. The model is content-based. "Frequently bought together" and "Popular with shoppers like you" are collaborative signals.
+
+**Q: Why does an old interaction count less?**
+A: Tastes change. The weight halves every 30 days (`0.5 ** (age_days / 30)`), so last week's browsing matters more than last quarter's.
+
+**Q: Could the weights be learned instead of hand-picked?**
+A: Yes. You could try different weights and keep the ones with the best click-through rate. That's what the A/B test in Phase 6 starts to measure: plain similarity vs the hybrid ranking.
+
+**Q: How is "Frequently bought together" calculated?**
+A: Find every order that contains a product in your cart. Count, per other product, how many of those orders also contain it (`Count("order_id", distinct=True)`). Then sort by that count and leave out what's already in your cart.
