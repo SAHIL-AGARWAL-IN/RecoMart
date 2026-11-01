@@ -371,3 +371,81 @@ A: Yes. You could try different weights and keep the ones with the best click-th
 
 **Q: How is "Frequently bought together" calculated?**
 A: Find every order that contains a product in your cart. Count, per other product, how many of those orders also contain it (`Count("order_id", distinct=True)`). Then sort by that count and leave out what's already in your cart.
+
+---
+
+## Phase 6: Admin dashboard, ML Insights and the A/B test
+
+### What we built
+- **Separate admin interface** at `/dashboard/` with its own sidebar layout. `dashboard/base_dashboard.html` extends `base.html` and swaps the shop navbar for a sidebar.
+  - Guests are sent to log in. Logged-in customers get **403 Forbidden**. Only users with `role = admin` (or superusers) get in.
+  - This is done with `admin_required` for function views and `StoreAdminRequiredMixin` for class-based views (`accounts/decorators.py`).
+- **Overview:**
+  - **KPI tiles:** revenue, orders, average order value, buyers and low stock, each compared with the previous 30 days.
+  - **Charts:** revenue per day, orders per day, top products and revenue by category, drawn with **Chart.js**. Each has a "Show data table" option.
+  - Order status counts and recent orders.
+- **CRUD:** add, edit and delete products (with image upload) and categories using Django's generic class-based views. Orders get a status update (Placed → Shipped → Delivered), and the inventory page has a quick "add stock" form.
+- **ML Insights:**
+  - Model version, K, silhouette score, products × features, and a warning for products that aren't in the model yet.
+  - **Elbow** and **silhouette** charts with the chosen K highlighted.
+  - **PCA cluster maps** as 8 small panels, each highlighting one cluster.
+  - **Click-through rate** for each recommendation strip.
+  - The **A/B test** result with a statistical test.
+  - A **Retrain model** button and an **A/B on/off switch**.
+  - The data is labelled as simulated.
+- **A/B test:** every shopper is put into group A or B by an MD5 hash of their user id (or guest session key).
+  - **A** sees "You may also like" ranked by pure similarity.
+  - **B** sees the hybrid ranking.
+
+  Impressions and clicks record the group, so the CTRs can be compared.
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| Generic class-based views for CRUD | List, create, update and delete are the same pattern for every model. `ListView`/`CreateView` etc. give pagination, forms and redirects with very little code. |
+| Products in past orders are hidden, not deleted | `OrderItem.product` is `on_delete=PROTECT`, so old orders keep their history. The admin sees a clear message instead of an error. |
+| ORM aggregates (`Sum`, `Count`, `TruncDate`) for every number | The database does the maths with one query per chart instead of looping in Python. |
+| One colour (teal) for every chart, grey for "other" | We ran the dataviz palette validator. Eight different colours can't be told apart reliably, especially by colour-blind readers. So each cluster gets its own small chart instead of one rainbow scatter. |
+| A data table under every chart | Charts are images to a screen reader. The table makes every number available. |
+| MD5 hash for A/B assignment | The same person always gets the same group (it's stable), and groups split about 50/50. Python's built-in `hash()` changes on every restart, so it can't be used. |
+| Two-proportion z-test | It tells us whether B's CTR is *really* different from A's, or whether the gap could just be chance. |
+| Shared `train_and_save()` | The command and the Retrain button run the exact same code, so they can't drift apart. |
+| `next` URLs checked with `url_has_allowed_host_and_scheme` | Stops "open redirect" tricks that send admins to another website. |
+
+### Bugs we found while testing (good viva stories)
+- **Empty K-Means cluster:** products with identical text gave identical vectors, K-Means left a cluster empty, and ranking crashed. The fix is `members.get(cluster, [])`, and a test now covers it.
+- **Windows clock resolution:** two orders and "now" got the *same* timestamp, because the Windows clock ticks about once per millisecond. The KPI window used `<` and left them out. The fix is an inclusive end (`<=`).
+- **An invisible element widened the phone page:** the `visually-hidden` "Actions" heading is `position: absolute` and escaped its scrolling table. The fix is `position: relative` on the scroll container.
+
+### Likely viva questions
+**Q: How do you stop customers from opening the dashboard?**
+A: Every dashboard view is wrapped with `admin_required` or `StoreAdminRequiredMixin`. A guest is redirected to the login page, and a customer gets HTTP 403. Tests check every dashboard page for all three kinds of user.
+
+**Q: What is an A/B test?**
+A: Show two versions to two random groups at the same time, measure the same metric (here CTR), and compare. Running both at once removes effects like "weekends are busier".
+
+**Q: Explain the z-test you use.**
+A: The pooled click rate is `p = (clicksA + clicksB) / (viewsA + viewsB)`.
+- The standard error is `√(p(1−p)(1/nA + 1/nB))`.
+- Then `z = (pB − pA) / SE`.
+- The p-value is the chance of seeing a gap at least this big if A and B were truly equal.
+
+If p < 0.05 we call the difference significant. Our simulated data gives p ≈ 0.25, so no real difference yet. That's expected, because the seed used the same click rate for both groups on purpose.
+
+**Q: What is CTR and why measure it?**
+A: Click-through rate = clicks ÷ impressions. It shows whether recommendations are useful to shoppers: a strip nobody clicks isn't helping.
+
+**Q: What does the silhouette score mean?**
+A: For each product, compare how close it is to its own cluster with how close it is to the nearest other cluster. It ranges from −1 to 1, and higher means better-separated clusters. Ours is 0.344 at K = 8.
+
+**Q: Why do clusters overlap in the PCA picture if they're well separated?**
+A: PCA keeps only the 2 strongest directions out of 332, about 20% of the variation here. Clusters separated along the other directions land on top of each other in a flat picture. The silhouette score is measured in the full space, so it's the real measure.
+
+**Q: What happens when the admin clicks "Retrain model"?**
+A:
+1. JavaScript sends a POST with the CSRF token.
+2. The view calls `train_and_save()`, which builds features, picks K, trains K-Means, ranks neighbours, saves `recomart_v{N+1}.joblib` and records a `TrainingRun`.
+3. It resets the cached model.
+4. The page reloads with the new metrics.
+
+The next recommendation request uses the new version.
