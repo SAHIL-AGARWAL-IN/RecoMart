@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Your profile | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <h1 class="mb-4">Hello, {{ user.first_name|default:user.username }}</h1>
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="buy-box">
+        <h2 class="h5">Your activity</h2>
+        <dl class="spec-list mt-3">
+          <dt>Username</dt><dd>{{ user.username }}</dd>
+          <dt>Member since</dt><dd>{{ user.date_joined|date:"F Y" }}</dd>
+          <dt>Orders</dt><dd>{{ order_count }}</dd>
+          <dt>Reviews</dt><dd>{{ review_count }}</dd>
+          <dt>Wishlist</dt><dd>{{ wishlist_count }} item{{ wishlist_count|pluralize }}</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="buy-box">
+        <h2 class="h5 mb-3">Personal details</h2>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row gx-3">
+            <div class="col-sm-6">{% include "partials/_field.html" with field=form.first_name %}</div>
+            <div class="col-sm-6">{% include "partials/_field.html" with field=form.last_name %}</div>
+            <div class="col-sm-6">{% include "partials/_field.html" with field=form.email %}</div>
+            <div class="col-sm-6">{% include "partials/_field.html" with field=form.phone %}</div>
+          </div>
+          <button class="btn btn-primary" type="submit">Save profile</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
