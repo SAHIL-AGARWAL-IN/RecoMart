@@ -2,6 +2,7 @@
 
 The ML maths lives in engine.py; this file connects it to Django models.
 """
+import hashlib
 import math
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -15,8 +16,8 @@ from django.utils import timezone
 from store.models import Interaction, OrderItem, Product
 from store.services import ensure_session_key, trending_products
 
-from . import engine, explain
-from .models import RecommendationData, RecommendationEvent, TrainingRun
+from . import engine, explain, features
+from .models import RecommendationData, RecommendationEvent, RecommenderSettings, TrainingRun
 
 WIDGETS = {choice.value for choice in RecommendationEvent.Widget}
 VECTOR_DECIMALS = 5
@@ -87,6 +88,52 @@ def _load(pairs, source):
     products = Product.objects.filter(id__in=[pid for pid, _ in pairs], is_active=True).select_related("category")
     by_id = {p.id: p for p in products}
     return [Suggestion(by_id[pid], score, source) for pid, score in pairs if pid in by_id]
+
+
+# --------------------------------------------------------------- training
+def train_and_save(k=None, k_min=None, k_max=None):
+    """Train on the current catalog, save the next Joblib version and record it. Returns (bundle, path, run).
+
+    Used by both `manage.py train_recommender` and the dashboard's Retrain button.
+    """
+    frame = features.load_product_frame()
+    if len(frame) < 4:
+        raise ValueError("Need at least 4 active products to train. Run: python manage.py seed_data")
+    bundle = engine.train(frame, k=k, k_min=k_min, k_max=k_max)
+    path = engine.save(bundle)
+    run = save_training_results(bundle, path)
+    engine.reset_cache()  # the running site picks up the new version on its next request
+    cache.delete("recommender:popularity")
+    return bundle, path, run
+
+
+def products_missing_from_model():
+    """Active products the current model doesn't know yet (added after the last training)."""
+    recommender = engine.get_recommender()
+    active = set(Product.objects.filter(is_active=True).values_list("id", flat=True))
+    return len(active) if recommender is None else len([pid for pid in active if pid not in recommender])
+
+
+# --------------------------------------------------------------- A/B test
+def ab_test_enabled():
+    """On only if the code allows it (settings) and the admin hasn't switched it off (dashboard)."""
+    return settings.RECOMMENDER["AB_TEST_ENABLED"] and RecommenderSettings.current().ab_test_enabled
+
+
+def ab_variant(request):
+    """'A' (pure similarity) or 'B' (hybrid ranking), stable for each shopper; '-' when the test is off.
+
+    The variant comes from an MD5 hash of the user id (or the guest's session key), so the same
+    person always sees the same variant and shoppers split roughly 50/50.
+    """
+    if not ab_test_enabled():
+        return RecommendationEvent.Variant.NONE
+    identity = f"user:{request.user.pk}" if request.user.is_authenticated else f"guest:{ensure_session_key(request)}"
+    return "AB"[int(hashlib.md5(identity.encode()).hexdigest(), 16) % 2]
+
+
+def ranking_for(variant):
+    return "similarity" if variant == "A" else "hybrid"
 
 
 # --------------------------------------------------------------- training results

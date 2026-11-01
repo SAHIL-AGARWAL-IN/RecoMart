@@ -15,12 +15,14 @@ from .models import RecommendationEvent
 Widget = RecommendationEvent.Widget
 
 
-def _card(suggestion, widget, source_product, wishlist_ids):
+def _card(suggestion, widget, source_product, wishlist_ids, variant):
     """Everything the JavaScript needs to draw one recommendation card."""
     product = suggestion.product
-    tracking = {"rec": widget}  # lets the product page log the click
+    tracking = {"rec": widget}  # lets the product page log the click (and its A/B variant)
     if source_product is not None:
         tracking["src"] = source_product.id
+    if variant != RecommendationEvent.Variant.NONE:
+        tracking["v"] = variant
     return {
         "id": product.id,
         "name": product.name,
@@ -39,27 +41,33 @@ def _card(suggestion, widget, source_product, wishlist_ids):
     }
 
 
-def _respond(request, suggestions, widget, source_product=None, **extra):
+def _respond(request, suggestions, widget, source_product=None, variant=RecommendationEvent.Variant.NONE, **extra):
     """Log impressions and return the cards as JSON."""
-    services.log_impressions(request, [s.product for s in suggestions], widget, source_product=source_product)
+    services.log_impressions(request, [s.product for s in suggestions], widget, source_product=source_product,
+                             variant=variant)
     wishlist_ids = set()
     if request.user.is_authenticated:
         wishlist_ids = set(request.user.wishlist_items.values_list("product_id", flat=True))
     return JsonResponse({
         "widget": widget,
+        "variant": variant,
         "model_version": services.model_version(),
-        "results": [_card(s, widget, source_product, wishlist_ids) for s in suggestions],
+        "results": [_card(s, widget, source_product, wishlist_ids, variant) for s in suggestions],
         **extra,
     })
 
 
 @require_GET
 def similar(request, product_id):
-    """GET /api/recommendations/<product_id>/ : "You may also like" for one product."""
+    """GET /api/recommendations/<product_id>/ : "You may also like" for one product.
+
+    A/B test: variant A ranks by pure similarity, variant B by the hybrid score.
+    """
     product = get_object_or_404(Product, pk=product_id, is_active=True)
-    suggestions = services.similar_products(product)
-    return _respond(request, suggestions, Widget.SIMILAR, source_product=product, product_id=product.id,
-                    source=suggestions[0].source if suggestions else None)
+    variant = services.ab_variant(request)
+    suggestions = services.similar_products(product, ranking=services.ranking_for(variant))
+    return _respond(request, suggestions, Widget.SIMILAR, source_product=product, variant=variant,
+                    product_id=product.id, source=suggestions[0].source if suggestions else None)
 
 
 @require_GET

@@ -8,7 +8,7 @@ import numpy as np
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from recommender import engine, features, services
+from recommender import features, services
 from store.models import Product
 
 
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         self.stdout.write("  Shopper activity (last 90 days, simulated by seed_data): "
                           + ", ".join(f"{col}={int(n)}" for col, n in activity.items()))
 
-        bundle = engine.train(frame, k=options["k"], k_min=options["k_min"], k_max=options["k_max"])
+        bundle, path, _ = services.train_and_save(k=options["k"], k_min=options["k_min"], k_max=options["k_max"])
         matrix = bundle["matrix"]
 
         self.section("2. Feature matrix")
@@ -72,9 +72,6 @@ class Command(BaseCommand):
             for pid, score in zip(bundle["top_ids"][row][:4], bundle["top_scores"][row][:4]):
                 self.stdout.write(f"      {score:.3f}  {names[pid]}")
 
-        path = engine.save(bundle)
-        services.save_training_results(bundle, path)
-        engine.reset_cache()  # the running site picks up the new version on its next request
 
         self.section("6. Saved")
         self.stdout.write(self.style.SUCCESS(

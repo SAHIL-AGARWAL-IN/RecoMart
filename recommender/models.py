@@ -43,6 +43,25 @@ class TrainingRun(models.Model):
         return f"v{self.version}: K={self.k}, silhouette={self.silhouette:.3f}"
 
 
+class RecommenderSettings(models.Model):
+    """Switches the admin can flip on the ML Insights page (one row only)."""
+
+    ab_test_enabled = models.BooleanField(
+        default=True, help_text="Split shoppers 50/50: A sees pure similarity, B sees hybrid ranking.")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "recommender settings"
+
+    def __str__(self):
+        return f"A/B test {'on' if self.ab_test_enabled else 'off'}"
+
+    @classmethod
+    def current(cls):
+        settings_row, _ = cls.objects.get_or_create(pk=1)
+        return settings_row
+
+
 class RecommendationEvent(models.Model):
     """An impression (we showed a recommended item) or a click (the shopper opened it).
 
