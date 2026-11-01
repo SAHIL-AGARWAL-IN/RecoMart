@@ -1,0 +1,34 @@
+{% load static %}
+<footer class="site-footer">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <a class="brand mb-3" href="{% url 'store:home' %}">
+          <img src="{% static 'img/logo.svg' %}" alt="" width="34" height="34">RecoMart
+        </a>
+        <p class="mb-0" style="max-width: 36ch;">An online store whose recommendations get better the more you browse.</p>
+      </div>
+      <div class="col-lg-5">
+        <h2>Shop</h2>
+        <ul class="site-footer__columns">
+          {% for cat in nav_categories %}<li><a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      <div class="col-lg-3">
+        <h2>Your account</h2>
+        <ul>
+          {% if user.is_authenticated %}
+            <li><a href="{% url 'accounts:profile' %}">Profile</a></li>
+          {% else %}
+            <li><a href="{% url 'accounts:login' %}">Log in</a></li>
+            <li><a href="{% url 'accounts:register' %}">Create an account</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="site-footer__base d-flex flex-wrap justify-content-between gap-2">
+      <span>RecoMart is a B.Tech CSE full stack lab project.</span>
+      <span>Payments are simulated. No real money changes hands.</span>
+    </div>
+  </div>
+</footer>

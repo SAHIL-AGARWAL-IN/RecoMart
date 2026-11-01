@@ -1,0 +1,13 @@
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false">
+  {% for message in messages %}
+    <div class="toast align-items-center" role="status" data-autoshow>
+      <div class="d-flex">
+        <div class="toast-body d-flex align-items-center gap-2">
+          <i class="bi {% if message.tags == 'error' %}bi-exclamation-circle{% else %}bi-check-circle{% endif %}" aria-hidden="true"></i>
+          {{ message }}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  {% endfor %}
+</div>

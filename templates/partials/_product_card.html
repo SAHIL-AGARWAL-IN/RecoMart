@@ -1,0 +1,19 @@
+{% load store_tags %}
+<article class="product-card{% if deal %} deal-card{% endif %}">
+  <a class="product-card__media" href="{{ product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="" loading="lazy" width="400" height="400">
+    {% endif %}
+    {% if product.discount_percent %}<span class="badge-deal">{{ product.discount_percent }}% off</span>{% endif %}
+    {% if not product.in_stock %}<span class="badge-stock">Out of stock</span>{% endif %}
+  </a>
+  <div class="product-card__body">
+    <p class="product-card__brand">{{ product.brand }}</p>
+    <h3 class="product-card__title"><a class="stretched-link" href="{{ product.get_absolute_url }}">{{ product.name }}</a></h3>
+    {% stars product.rating_avg product.rating_count %}
+    <div class="price">
+      <span class="price__now">{{ product.effective_price|inr }}</span>
+      {% if product.discount_price %}<s class="price__was"><span class="visually-hidden">Was </span>{{ product.price|inr }}</s>{% endif %}
+    </div>
+  </div>
+</article>
