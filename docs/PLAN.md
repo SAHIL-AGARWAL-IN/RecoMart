@@ -7,7 +7,7 @@
 - [x] Phase 2: Storefront UI (base.html, theme, auth pages, home, product list, product detail), branch `phase-2-storefront` (done, merged into `main`)
 - [x] Phase 3: Shopping (cart, checkout, orders, wishlist, reviews, AJAX search & filters), branch `phase-3-shopping` (done, merged into `main`)
 - [x] Phase 4: ML engine (features, training command, Joblib, recommendation API, "You may also like"), branch `phase-4-ml-engine` (done, merged into `main`)
-- [x] Phase 5: Enhancements (personalised feed, hybrid ranking, explanations, FBT, recently viewed), branch `phase-5-enhancements` (done, waiting for the user's OK to merge)
+- [x] Phase 5: Enhancements (personalised feed, hybrid ranking, explanations, FBT, recently viewed), branch `phase-5-enhancements` (done, merged into `main`)
 - [ ] Phase 6: Admin dashboard, ML Insights, A/B toggle
 - [ ] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5)
 - [ ] Phase 8: Polish (dark mode, responsiveness, tests, README)
