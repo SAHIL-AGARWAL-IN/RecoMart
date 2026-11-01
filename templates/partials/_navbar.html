@@ -42,8 +42,7 @@
               <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person me-2" aria-hidden="true"></i>Profile</a></li>
               <li><a class="dropdown-item" href="{% url 'store:order_list' %}"><i class="bi bi-box-seam me-2" aria-hidden="true"></i>Orders</a></li>
               {% if user.is_store_admin %}
-                {# Points at Django admin until the custom dashboard is built in Phase 6. #}
-                <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Dashboard</a></li>
+                <li><a class="dropdown-item" href="{% url 'dashboard:index' %}"><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Dashboard</a></li>
               {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>

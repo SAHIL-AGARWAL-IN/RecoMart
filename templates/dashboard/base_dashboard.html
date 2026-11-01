@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% block page_title %}Dashboard{% endblock %} | RecoMart admin{% endblock %}
+{% block body_class %}dash-body{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
+
+{% block navbar %}
+{% with section=request.resolver_match.url_name %}
+<header class="dash-topbar d-lg-none">
+  <button class="icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#dash-nav" aria-controls="dash-nav" aria-label="Open admin menu">
+    <i class="bi bi-list" aria-hidden="true"></i>
+  </button>
+  <a class="brand" href="{% url 'dashboard:index' %}" translate="no"><img src="{% static 'img/logo.svg' %}" alt="" width="30" height="30">RecoMart</a>
+</header>
+
+<aside class="dash-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="dash-nav" aria-label="Admin navigation">
+  <div class="dash-sidebar__head">
+    <a class="brand" href="{% url 'dashboard:index' %}" translate="no"><img src="{% static 'img/logo.svg' %}" alt="" width="32" height="32">RecoMart</a>
+    <span class="dash-sidebar__tag">Admin</span>
+    <button type="button" class="btn-close btn-close-white d-lg-none ms-auto" data-bs-dismiss="offcanvas" data-bs-target="#dash-nav" aria-label="Close menu"></button>
+  </div>
+  <nav class="dash-nav">
+    <a href="{% url 'dashboard:index' %}"{% if section == 'index' %} aria-current="page"{% endif %}><i class="bi bi-speedometer2" aria-hidden="true"></i>Overview</a>
+    <a href="{% url 'dashboard:products' %}"{% if 'product' in section %} aria-current="page"{% endif %}><i class="bi bi-box-seam" aria-hidden="true"></i>Products</a>
+    <a href="{% url 'dashboard:categories' %}"{% if 'categor' in section %} aria-current="page"{% endif %}><i class="bi bi-tags" aria-hidden="true"></i>Categories</a>
+    <a href="{% url 'dashboard:orders' %}"{% if 'order' in section %} aria-current="page"{% endif %}><i class="bi bi-receipt" aria-hidden="true"></i>Orders</a>
+    <a href="{% url 'dashboard:inventory' %}"{% if section == 'inventory' %} aria-current="page"{% endif %}><i class="bi bi-boxes" aria-hidden="true"></i>Inventory</a>
+    <a href="{% url 'dashboard:ml_insights' %}"{% if section == 'ml_insights' %} aria-current="page"{% endif %}><i class="bi bi-diagram-3" aria-hidden="true"></i>ML Insights</a>
+  </nav>
+  <div class="dash-sidebar__foot">
+    <a href="{% url 'store:home' %}"><i class="bi bi-shop" aria-hidden="true"></i>View store</a>
+    <a href="{% url 'admin:index' %}"><i class="bi bi-database-gear" aria-hidden="true"></i>Django admin</a>
+    <form method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Log out {{ user.username }}</button>
+    </form>
+  </div>
+</aside>
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="dash-main">
+  <div class="dash-head">
+    <div>
+      <h1>{% block heading %}{% endblock %}</h1>
+      {% block subheading %}{% endblock %}
+    </div>
+    <div class="dash-head__actions">{% block actions %}{% endblock %}</div>
+  </div>
+  {% block dash_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

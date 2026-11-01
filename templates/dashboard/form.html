@@ -1,0 +1,35 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block actions %}<a class="btn btn-quiet" href="{{ back_url }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back</a>{% endblock %}
+
+{% block dash_content %}
+<form class="panel" method="post" enctype="multipart/form-data" novalidate style="max-width: 760px;">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row gx-3">
+    {% for field in form %}
+      {% if field.name == "is_active" %}
+        <div class="col-12 mb-3">
+          <div class="form-check form-switch">
+            {{ field }}
+            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          </div>
+        </div>
+      {% else %}
+        <div class="{% if field.name == 'description' or field.name == 'image' %}col-12{% else %}col-md-6{% endif %}">
+          {% include "partials/_field.html" with field=field %}
+          {% if field.name == "image" and form.instance.image %}
+            <img class="thumb mb-3" src="{{ form.instance.image.url }}" alt="Current image" width="64" height="64" style="width:64px;height:64px">
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn btn-quiet" href="{{ back_url }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

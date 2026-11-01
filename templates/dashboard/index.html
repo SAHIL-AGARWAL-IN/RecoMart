@@ -1,0 +1,111 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static store_tags humanize %}
+
+{% block page_title %}Overview{% endblock %}
+{% block heading %}Overview{% endblock %}
+{% block subheading %}<p>The last {{ kpis.days }} days, compared with the {{ kpis.days }} days before. Order data is simulated by seed_data.</p>{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="{% url 'dashboard:product_add' %}"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add product</a>{% endblock %}
+
+{% block dash_content %}
+<section class="stat-grid" aria-label="Key numbers">
+  <div class="stat">
+    <p class="stat__label">Revenue</p>
+    <p class="stat__value">{{ kpis.revenue|inr }}</p>
+    {% include "dashboard/_delta.html" with change=kpis.revenue_change %}
+  </div>
+  <div class="stat">
+    <p class="stat__label">Orders</p>
+    <p class="stat__value">{{ kpis.orders|intcomma }}</p>
+    {% include "dashboard/_delta.html" with change=kpis.orders_change %}
+  </div>
+  <div class="stat">
+    <p class="stat__label">Average order value</p>
+    <p class="stat__value">{{ kpis.aov|inr }}</p>
+    <p class="stat__note">Revenue ÷ orders</p>
+  </div>
+  <div class="stat">
+    <p class="stat__label">Customers who ordered</p>
+    <p class="stat__value">{{ kpis.customers }}</p>
+    <p class="stat__note">Distinct buyers</p>
+  </div>
+  <a class="stat{% if kpis.low_stock %} stat--alert{% endif %} text-decoration-none" href="{% url 'dashboard:inventory' %}">
+    <p class="stat__label"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Low stock</p>
+    <p class="stat__value">{{ kpis.low_stock }}</p>
+    <p class="stat__note">Products with 5 or fewer left</p>
+  </a>
+</section>
+
+<div class="panel-grid panel-grid--wide mt-3">
+  <section class="panel" aria-labelledby="revenue-title">
+    <div class="panel__head"><h2 id="revenue-title">Revenue per day</h2><p>Order totals including delivery</p></div>
+    <div class="chart"><canvas id="revenue-chart" role="img" aria-label="Line chart of revenue per day for the last 30 days"></canvas></div>
+    {% include "dashboard/_daily_table.html" %}
+  </section>
+  <section class="panel" aria-labelledby="orders-title">
+    <div class="panel__head"><h2 id="orders-title">Orders per day</h2></div>
+    <div class="chart"><canvas id="orders-chart" role="img" aria-label="Bar chart of orders per day for the last 30 days"></canvas></div>
+    <div class="d-grid gap-2 mt-3">
+      {% for row in statuses %}
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="status-pill status-pill--{{ row.status }}">{{ row.label }}</span>
+          <strong>{{ row.count }}</strong>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<div class="panel-grid mt-3">
+  <section class="panel" aria-labelledby="top-title">
+    <div class="panel__head"><h2 id="top-title">Top products</h2><p>Units sold, last 30 days</p></div>
+    {% if top_products %}
+      <div class="chart chart--tall"><canvas id="top-chart" role="img" aria-label="Bar chart of the best-selling products by units"></canvas></div>
+      <details class="data-table"><summary>Show data table</summary>
+        <table class="dash-table"><thead><tr><th>Product</th><th class="num">Units</th><th class="num">Revenue</th></tr></thead><tbody>
+          {% for row in top_products %}<tr><td>{{ row.product_name }}</td><td class="num">{{ row.units }}</td><td class="num">{{ row.revenue|inr }}</td></tr>{% endfor %}
+        </tbody></table>
+      </details>
+    {% else %}<p class="text-muted mb-0">No orders in this period yet.</p>{% endif %}
+  </section>
+  <section class="panel" aria-labelledby="category-title">
+    <div class="panel__head"><h2 id="category-title">Revenue by category</h2><p>Last 30 days</p></div>
+    {% if categories %}
+      <div class="chart chart--tall"><canvas id="category-chart" role="img" aria-label="Bar chart of revenue for each category"></canvas></div>
+      <details class="data-table"><summary>Show data table</summary>
+        <table class="dash-table"><thead><tr><th>Category</th><th class="num">Units</th><th class="num">Revenue</th></tr></thead><tbody>
+          {% for row in categories %}<tr><td>{{ row.category }}</td><td class="num">{{ row.units }}</td><td class="num">{{ row.revenue|inr }}</td></tr>{% endfor %}
+        </tbody></table>
+      </details>
+    {% else %}<p class="text-muted mb-0">No orders in this period yet.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel mt-3" aria-labelledby="recent-title">
+  <div class="panel__head"><h2 id="recent-title">Recent orders</h2><a href="{% url 'dashboard:orders' %}">All orders</a></div>
+  <div class="table-scroll">
+    <table class="dash-table">
+      <thead><tr><th>Order</th><th>Customer</th><th>Placed</th><th>Status</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        {% for order in recent_orders %}
+          <tr>
+            <td><a href="{% url 'dashboard:order_detail' order.pk %}">{{ order.order_number }}</a></td>
+            <td>{{ order.full_name }}</td>
+            <td>{{ order.created_at|naturaltime }}</td>
+            <td><span class="status-pill status-pill--{{ order.status }}">{{ order.get_status_display }}</span></td>
+            <td class="num">{{ order.total|inr }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{{ daily|json_script:"daily-data" }}
+{{ top_products|json_script:"top-data" }}
+{{ categories|json_script:"category-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}
