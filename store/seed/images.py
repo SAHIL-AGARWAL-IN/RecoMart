@@ -69,7 +69,7 @@ def _soft_shadow(canvas, box, radius=24):
 
 def book_cover(title, author):
     """A standing book with a coloured cover, title and author."""
-    canvas = Image.new("RGBA", (SIZE, SIZE), "#F4F1EC")
+    canvas = Image.new("RGBA", (SIZE, SIZE), "#FFFFFF")
     cover = _pick(BOOK_COLOURS, title)
     left, top, width, height = 190, 70, 420, 640
 
