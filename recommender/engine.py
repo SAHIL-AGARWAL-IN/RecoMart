@@ -121,6 +121,28 @@ def train(frame, k=None, k_min=None, k_max=None, random_state=None, top_n=None):
     }
 
 
+# ----------------------------------------------------------------- hybrid ranking
+RECENCY_DAYS = 90
+
+
+def recency_score(age_days, scale_days=RECENCY_DAYS):
+    """1.0 for a brand-new product, falling smoothly: exp(-age / 90) is about 0.37 after 90 days."""
+    return float(np.exp(-max(age_days, 0) / scale_days))
+
+
+def hybrid_score(similarity, popularity, recency, weights):
+    """final = similarity * w1 + popularity * w2 + recency * w3 (all three inputs are 0..1)."""
+    return (similarity * weights["similarity"] + popularity * weights["popularity"]
+            + recency * weights["recency"])
+
+
+def profile_vector(vectors, weights):
+    """A shopper's taste: the weighted average of the products they interacted with, scaled to length 1."""
+    profile = np.average(np.asarray(vectors), axis=0, weights=np.asarray(weights, dtype=float))
+    norm = np.linalg.norm(profile)
+    return profile / norm if norm else profile
+
+
 # ----------------------------------------------------------------- saving and loading
 def _versions(folder):
     found = []
@@ -171,6 +193,18 @@ class Recommender:
 
     def vector(self, product_id):
         return self.bundle["matrix"][self._row[product_id]]
+
+    def nearest_to(self, vector, exclude=(), n=40):
+        """Products closest (by cosine similarity) to any unit vector, e.g. a shopper's taste profile."""
+        similarity = self.bundle["matrix"] @ vector
+        ranked = []
+        for row in np.argsort(-similarity):
+            product_id = self.bundle["product_ids"][row]
+            if product_id not in exclude:
+                ranked.append((product_id, round(float(similarity[row]), 4)))
+                if len(ranked) == n:
+                    break
+        return ranked
 
     def cluster_of(self, product_id):
         return self.bundle["labels"][self._row[product_id]]
