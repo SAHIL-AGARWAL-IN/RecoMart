@@ -10,7 +10,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 from recommender.models import RecommendationEvent
 from store.models import Category, Interaction, Order, Product, Review
-from store.seed.catalog import PER_CATEGORY, build_catalog, nice_price
+from store.seed.catalog import PER_CATEGORY, build_catalog, discounted_price, nice_price
 
 User = get_user_model()
 
@@ -20,6 +20,11 @@ class CatalogTests(SimpleTestCase):
         self.assertEqual(nice_price(67), Decimal("69"))
         self.assertEqual(nice_price(812), Decimal("849"))
         self.assertEqual(nice_price(4321), Decimal("4299"))
+
+    def test_discounts_round_down_to_shop_prices(self):
+        self.assertEqual(discounted_price(Decimal("299"), 12), Decimal("249"))
+        self.assertEqual(discounted_price(Decimal("10999"), 43), Decimal("6199"))
+        self.assertIsNone(discounted_price(Decimal("9"), 1))  # nothing left to discount
 
     def test_catalog_has_eight_balanced_categories(self):
         catalog = build_catalog(offline=True)

@@ -70,12 +70,24 @@ def nice_price(inr):
     return Decimal(value)
 
 
+def nice_price_down(inr, step):
+    """Round down to a price ending in 9 at the given step: (263, 50) -> 249, (4321, 100) -> 4299."""
+    return Decimal(math.floor(float(inr) / step) * step - 1)
+
+
 def discounted_price(price, percent):
-    """Sale price after `percent` off, or None if rounding would leave no real discount."""
+    """Sale price after `percent` off, rounded down to a shop-style price, or None if no real discount.
+
+    Tries coarse steps first (₹..99), then finer ones (₹..49, ₹..9), and keeps the first one that
+    moves the price by at most 5% of the original, so the advertised discount stays honest.
+    """
     exact = price * Decimal(1 - percent / 100)
-    candidate = nice_price(exact)
-    if candidate >= price:  # e.g. 10% off ₹299 rounds back up to ₹299
-        candidate = exact.quantize(Decimal("1"))
+    candidate = exact.quantize(Decimal("1"))
+    for step in (100, 50, 10):
+        rounded = nice_price_down(exact, step)
+        if rounded > 0 and exact - rounded <= price * Decimal("0.05"):
+            candidate = rounded
+            break
     return candidate if candidate < price else None
 
 
