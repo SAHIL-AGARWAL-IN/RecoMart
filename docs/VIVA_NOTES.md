@@ -212,3 +212,98 @@ A: The same Django template (`_product_results.html`) is used for the normal pag
 
 **Q: How does the wishlist heart know a product is already saved?**
 A: The `store_nav` context processor puts the set of the user's wishlisted product ids into every template. The card checks `product.id in wishlist_ids` and sets `aria-pressed="true"`, which the CSS uses to show a filled heart.
+
+---
+
+## Phase 4: ML engine (features, training, Joblib, recommendation API, "You may also like")
+
+### What we built
+- **`recommender/features.py`** turns each product into a **feature vector** (a list of 332 numbers) with a scikit-learn `Pipeline`:
+  1. **TF-IDF** of name + brand + category + description: which words describe the product.
+  2. **One-hot** category and brand. Brands that appear only once are grouped as "other".
+  3. **Numbers:** log(price) and 90-day activity (views, carts, wishlists, purchases), scaled to 0–1, plus the rating.
+  4. Each block gets a weight (words and category 1.0, brand 0.4, numbers 0.3, rating 0.2). Then every row is **L2-normalised** to length 1.
+- **`recommender/engine.py`:**
+  - **K-Means** for K = 3…12. For each K it records **inertia** (for the elbow method) and the **silhouette score**, and K is the best silhouette.
+  - **Ranking:** cosine similarity inside the product's cluster, topped up from the nearest clusters.
+  - **PCA** reduces the vectors to 2-D, which the scatter chart in Phase 6 will use.
+  - **Saving:** Joblib versions (`recommender/artifacts/recomart_v1.joblib`, `v2`, …).
+  - **Serving:** a `Recommender` object loaded **once per process** and cached.
+- **`python manage.py train_recommender`** prints every check and saves a `TrainingRun`, a `RecommendationData` row per product, and `Product.feature_vector`.
+- **`/api/recommendations/<id>/`** returns JSON, and the **"You may also like"** carousel on the product page fetches it. Skeleton cards show while loading, it scrolls sideways, and the hearts and quick-add buttons work.
+- **Measuring it:** every card shown is an *impression*. Opening one is a *click*: the link carries `?rec=similar&src=<id>`, the product page logs the click, then redirects to the clean URL.
+
+### Our training run (150 products, simulated shopper data)
+- 150 products × 332 features, 0 missing values, 0 NaNs, every row length 1.000.
+- Silhouette rose from 0.15 (K=3) to **0.344 at K=8**, then fell. The elbow of the inertia curve is also at K=8, so **K = 8**.
+- Each of the 8 clusters is 100% one category (Grocery, Home & Kitchen, Sports, Books, Electronics, Fashion, Beauty, Toys).
+- Sample: for **Oppo A57** the top matches are Oppo K1 (0.835), Oppo F19 Pro Plus (0.760), then iPhones. For **Essence Mascara** they're Red Lipstick, Powder Canister and Red Nail Polish.
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| L2-normalise every vector | Then cosine similarity is just a dot product (`matrix @ matrix.T`), which is fast and simple. K-Means on unit vectors also groups by *direction*, i.e. by what a product is like. |
+| `log(price)` before scaling | Prices run from ₹69 to ₹13 lakh. Without the log, one Rolex would squash every other price close to 0. |
+| Block weights (words/category heavy, numbers light) | A cheap phone should still match an expensive phone. Price and popularity only break ties. |
+| K by silhouette, with the elbow printed too | The silhouette score measures how well-separated the clusters are, which is a clear rule. The elbow method is a visual check, and here both agree on 8. |
+| Rank inside the cluster first, then the nearest clusters | Clustering narrows the search to the right "neighbourhood". Topping up from the nearest clusters means we always have enough suggestions. |
+| Train offline with a command, not on every request | Training takes about 4 seconds. Serving a cached list takes microseconds. |
+| Joblib with version numbers | We can keep old models, roll back, and show "model v3" in the dashboard. Joblib stores NumPy arrays efficiently. |
+| Load the model once and cache it | Reading the file on every request would be slow. `reset_cache()` makes the site use the new version right after retraining. |
+| Out-of-stock items go last | Don't recommend things the shopper can't buy. |
+| Fallback to popular items in the same category | A product added after training isn't in the model yet, but it still gets sensible suggestions. |
+| Redirect after logging a click | Refreshing or sharing the page doesn't count the click twice, and the URL stays clean. |
+
+### Likely viva questions
+**Q: Explain TF-IDF.**
+A: Term Frequency × Inverse Document Frequency. A word scores high if it appears often in *this* product's text but rarely across all products. "android" is important for a phone; "the" is ignored (a stop word); "new" appears everywhere, so it gets a low weight.
+
+**Q: What is one-hot encoding?**
+A: Turning a category into columns of 0/1. For example "Electronics" becomes [1, 0, 0, …]. A model can't use text labels directly, and plain numbers like 1, 2, 3 would wrongly suggest an order.
+
+**Q: What is cosine similarity?**
+A: The cosine of the angle between two vectors. 1 means pointing the same way (very similar), 0 means unrelated. Because our vectors have length 1, it equals their dot product.
+
+**Q: How does K-Means work?**
+A:
+1. Pick K starting centres.
+2. Assign every product to its nearest centre.
+3. Move each centre to the average of its products.
+4. Repeat steps 2–3 until nothing changes.
+
+We run it 10 times from different starting points (`n_init=10`) and keep the best, with `random_state=42` so the result is repeatable.
+
+**Q: How did you choose K?**
+A: We tried K = 3 to 12.
+- **Inertia** (the total squared distance of products to their centre) always goes down as K grows. The "elbow" is where it stops dropping steeply.
+- **Silhouette** (from −1 to 1) compares how close each product is to its own cluster versus the next one, so higher is better.
+
+We pick the best silhouette, and the elbow agreed: K = 8.
+
+**Q: Your 8 clusters are exactly the 8 categories. Isn't that just filtering by category?**
+A: No:
+- The clusters were *learned* from the data, not given. They match the categories because category, words and brand naturally separate the products, which shows the features work.
+- Inside a cluster, the *order* comes from words, brand, price and popularity. That's why an Oppo phone shows other Oppos first, and mascara shows lipstick before body lotion.
+- A product can also get suggestions from neighbouring clusters.
+
+**Q: What is PCA, and why use it?**
+A: Principal Component Analysis squeezes 332 numbers into 2 while keeping as much variation as possible. We only use it to *draw* the clusters on a 2-D chart (Phase 6), not for recommending.
+
+**Q: Why Joblib and not pickle?**
+A: Joblib is built on pickle, but it is much faster and smaller for large NumPy arrays and compresses them. We only load files our own command created, because loading a pickle from an untrusted source can run code.
+
+**Q: How do you make sure a product never recommends itself?**
+A: `rank_similar` skips index `i` when ranking product `i`'s list, and a unit test checks every list.
+
+**Q: How do you test an ML model?**
+A: On a small fixed dataset with three obvious groups (phones, novels, cookware). Each test checks one thing:
+- K = 3 is chosen and each group is one cluster
+- no product is in its own list
+- the top match always shares the category
+- vectors have no NaNs and have length 1
+- saving and reloading with Joblib gives identical results
+- out-of-stock items go last
+- new products get the fallback
+
+**Q: What is a click-through rate (CTR)?**
+A: Clicks ÷ impressions. If "You may also like" is shown 1,000 times and opened 50 times, the CTR is 5%. We log both, and Phase 6 compares the A/B variants with it.
