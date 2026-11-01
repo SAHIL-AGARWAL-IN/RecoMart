@@ -10,6 +10,7 @@ admin.site.site_title = "RecoMart admin"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
+    path("", include("recommender.urls")),
     path("", include("store.urls")),
 ]
 

@@ -237,6 +237,25 @@
 .search-results__empty { margin: 0; padding: 0.75rem; color: var(--rm-muted); font-size: 0.92rem; }
 .search-results mark { padding: 0; background: var(--rm-marigold-soft); color: inherit; border-radius: 2px; }
 
+/* ---------- Recommendation strip: horizontal scroll with snap ---------- */
+.rec-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * 1rem) / 4); /* 4 cards visible on laptops */
+  gap: 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding: 0.25rem 0.25rem 0.75rem;
+  margin-inline: -0.25rem;
+}
+.rec-track__item { scroll-snap-align: start; min-width: 0; }
+.rec-strip__nav { gap: 0.25rem; }
+@media (min-width: 1400px) { .rec-track { grid-auto-columns: calc((100% - 4 * 1rem) / 5); } }
+@media (max-width: 991.98px) { .rec-track { grid-auto-columns: calc((100% - 2 * 1rem) / 3); } }
+@media (max-width: 575.98px) { .rec-track { grid-auto-columns: 46%; gap: 0.75rem; } }
+
 /* ---------- Skeleton loaders (shown while AJAX content loads) ---------- */
 .skeleton { position: relative; overflow: hidden; background: var(--rm-line); border-radius: var(--rm-radius-sm); }
 .skeleton-card { height: 100%; border-radius: var(--rm-radius); background: var(--rm-surface); border: 1px solid var(--rm-line); overflow: hidden; }

@@ -6,6 +6,8 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from recommender import services as rec_services
+
 from . import cart as cart_service
 from . import services
 from .forms import CheckoutForm, ReviewForm
@@ -78,6 +80,12 @@ def product_list(request, slug=None):
 def product_detail(request, slug):
     product = get_object_or_404(
         Product.objects.select_related("category").prefetch_related("images"), slug=slug, is_active=True)
+
+    # Opened from a recommendation (?rec=similar&src=12): count the click, then redirect to the
+    # clean URL so refreshing or sharing the page doesn't count it again.
+    if "rec" in request.GET:
+        rec_services.log_click(request, product, request.GET["rec"], request.GET.get("src"), request.GET.get("v", "-"))
+        return redirect(product.get_absolute_url())
 
     services.log_interaction(request, product, Interaction.Type.VIEW)
     services.remember_viewed(request, product)
