@@ -45,6 +45,7 @@
 /* ---------- Design tokens: light ---------- */
 :root,
 [data-bs-theme="light"] {
+  color-scheme: light;
   /* Brand */
   --rm-teal: #0b5d5b;
   --rm-teal-deep: #084644;
@@ -83,6 +84,7 @@
 
 /* ---------- Design tokens: dark (toggle wired up in Phase 7) ---------- */
 [data-bs-theme="dark"] {
+  color-scheme: dark;
   --rm-teal: #4cc1b6;
   --rm-teal-deep: #7fd6cd;
   --rm-teal-mist: #17312f;
@@ -127,7 +129,10 @@
   --bs-danger: var(--rm-danger);
 }
 
+/* Keep anchors and keyboard focus clear of the sticky header. */
+html { scroll-padding-top: 96px; -webkit-tap-highlight-color: rgba(var(--rm-teal-rgb), 0.12); }
 [id] { scroll-margin-top: 96px; }
+a, button, input, select, label, summary { touch-action: manipulation; }
 
 body {
   background: var(--rm-paper);
@@ -136,6 +141,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, .display-font {
+  text-wrap: balance;
   font-family: var(--rm-font-display);
   color: var(--rm-ink);
   letter-spacing: -0.02em;
@@ -545,6 +551,7 @@ main { min-height: 60vh; }
 
 /* ---------- Price and rating ---------- */
 .price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.15rem 0.5rem; }
+.price { font-variant-numeric: tabular-nums; }
 .price__now { font-family: var(--rm-font-display); font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; }
 .price__was { color: var(--rm-muted); font-size: 0.875rem; }
 .price__off { color: var(--rm-success); font-size: 0.85rem; font-weight: 600; }
@@ -608,6 +615,8 @@ main { min-height: 60vh; }
 
 /* ---------- Product detail ---------- */
 .breadcrumb { --bs-breadcrumb-divider-color: var(--rm-muted); font-size: 0.9rem; }
+.breadcrumb-item.text-truncate { min-width: 0; max-width: 100%; }
+.offcanvas, .offcanvas-lg .offcanvas-body { overscroll-behavior: contain; }
 .breadcrumb a { color: var(--rm-muted); text-decoration: none; }
 .breadcrumb a:hover { color: var(--rm-teal); text-decoration: underline; }
 
@@ -668,7 +677,7 @@ main { min-height: 60vh; }
 .spec-list dd { margin: 0; }
 
 .rating-summary__score { font-family: var(--rm-font-display); font-size: 3rem; font-weight: 800; line-height: 1; }
-.rating-bar { display: grid; grid-template-columns: 2.6rem 1fr 2rem; align-items: center; gap: 0.6rem; font-size: 0.875rem; }
+.rating-bar { display: grid; grid-template-columns: 2.6rem 1fr 2rem; align-items: center; gap: 0.6rem; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
 .rating-bar__track { height: 8px; border-radius: var(--rm-radius-pill); background: var(--rm-line); overflow: hidden; }
 .rating-bar__fill { display: block; height: 100%; background: var(--rm-star); border-radius: inherit; }
 
@@ -693,7 +702,7 @@ main { min-height: 60vh; }
   background: var(--rm-teal-deep);
   color: #e9f4f2;
 }
-.auth-shell__aside h2 { color: #fff; font-size: 1.6rem; max-width: 16ch; }
+.auth-shell__title { font-family: var(--rm-font-display); font-weight: 800; letter-spacing: -0.02em; color: #fff; font-size: 1.6rem; line-height: 1.2; max-width: 16ch; text-wrap: balance; }
 .auth-shell__aside p { color: #cfe5e1; max-width: 34ch; }
 .auth-shell__aside .cluster-dots { position: absolute; inset: auto 2rem 2rem auto; width: 180px; opacity: 0.9; }
 .auth-shell__form { padding: clamp(1.5rem, 4vw, 2.75rem); }

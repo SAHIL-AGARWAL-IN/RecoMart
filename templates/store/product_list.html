@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if category %}{{ category.name }}{% elif filters.q %}Results for "{{ filters.q }}"{% else %}All products{% endif %} | RecoMart{% endblock %}
+{% block title %}{% if category %}{{ category.name }}{% elif filters.q %}Results for “{{ filters.q }}”{% else %}All products{% endif %} | RecoMart{% endblock %}
 
 {% block content %}
 <div class="container pt-4">
@@ -18,7 +18,7 @@
 
   <header class="mb-4">
     <h1 class="mb-1">
-      {% if filters.q %}Results for "{{ filters.q }}"{% elif category %}{{ category.name }}{% else %}All products{% endif %}
+      {% if filters.q %}Results for “{{ filters.q }}”{% elif category %}{{ category.name }}{% else %}All products{% endif %}
     </h1>
     {% if category and not filters.q %}<p class="text-muted mb-0">{{ category.description }}</p>{% endif %}
   </header>
@@ -49,11 +49,11 @@
               <legend>Price (₹)</legend>
               <div class="d-flex align-items-center gap-2">
                 <label class="visually-hidden" for="min-price">Minimum price</label>
-                <input class="form-control" id="min-price" type="number" name="min_price" min="0" step="1" inputmode="numeric"
+                <input class="form-control" id="min-price" type="number" name="min_price" min="0" step="1" inputmode="numeric" autocomplete="off"
                        placeholder="Min" value="{{ filters.min_price|default_if_none:'' }}">
                 <span class="text-muted" aria-hidden="true">to</span>
                 <label class="visually-hidden" for="max-price">Maximum price</label>
-                <input class="form-control" id="max-price" type="number" name="max_price" min="0" step="1" inputmode="numeric"
+                <input class="form-control" id="max-price" type="number" name="max_price" min="0" step="1" inputmode="numeric" autocomplete="off"
                        placeholder="Max" value="{{ filters.max_price|default_if_none:'' }}">
               </div>
             </fieldset>

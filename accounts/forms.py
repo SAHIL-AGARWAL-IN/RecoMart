@@ -20,10 +20,13 @@ class BootstrapFormMixin:
                 self.fields[name].widget.attrs["class"] += " is-invalid"
 
 
+NO_SPELLCHECK = {"spellcheck": "false", "autocapitalize": "none"}
+
+
 class LoginForm(BootstrapFormMixin, AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["username"].widget.attrs.update(autocomplete="username", placeholder="priya")
+        self.fields["username"].widget.attrs.update(autocomplete="username", **NO_SPELLCHECK)
 
 
 class RegisterForm(BootstrapFormMixin, UserCreationForm):
@@ -34,6 +37,13 @@ class RegisterForm(BootstrapFormMixin, UserCreationForm):
     class Meta:
         model = User
         fields = ("first_name", "last_name", "username", "email")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["first_name"].widget.attrs.update(autocomplete="given-name")
+        self.fields["last_name"].widget.attrs.update(autocomplete="family-name")
+        self.fields["username"].widget.attrs.update(autocomplete="username", **NO_SPELLCHECK)
+        self.fields["email"].widget.attrs.update(autocomplete="email", **NO_SPELLCHECK)
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
@@ -46,4 +56,9 @@ class ProfileForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = User
         fields = ("first_name", "last_name", "email", "phone")
-        widgets = {"phone": forms.TextInput(attrs={"inputmode": "tel", "placeholder": "10-digit mobile number"})}
+        widgets = {
+            "first_name": forms.TextInput(attrs={"autocomplete": "given-name"}),
+            "last_name": forms.TextInput(attrs={"autocomplete": "family-name"}),
+            "email": forms.EmailInput(attrs={"autocomplete": "email", **NO_SPELLCHECK}),
+            "phone": forms.TextInput(attrs={"type": "tel", "autocomplete": "tel", "placeholder": "98765 43210…"}),
+        }
