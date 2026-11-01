@@ -73,7 +73,15 @@
       foot.append(add);
     }
 
-    body.append(el("p", "product-card__brand", item.brand), title, stars(item.rating, item.rating_count), foot);
+    body.append(el("p", "product-card__brand", item.brand), title, stars(item.rating, item.rating_count));
+    if (item.reasons && item.reasons.length) {
+      // "Why this?" chips: short reasons this product was recommended
+      const chips = el("ul", "why-chips");
+      chips.setAttribute("aria-label", "Why this is recommended");
+      item.reasons.forEach((reason) => chips.append(el("li", "why-chip", reason)));
+      body.append(chips);
+    }
+    body.append(foot);
     article.append(media, heart, body);
 
     const slot = el("div", "rec-track__item");
@@ -91,6 +99,8 @@
       }
       track.replaceChildren(...data.results.map(card));
       track.removeAttribute("aria-busy");
+      const subtitle = section.querySelector("[data-rec-subtitle]");
+      if (subtitle && data.subtitle) subtitle.textContent = data.subtitle;
     } catch (error) {
       section.hidden = true; // recommendations are a bonus: never break the page if they fail
     }

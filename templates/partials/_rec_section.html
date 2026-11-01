@@ -1,0 +1,26 @@
+{% comment %}
+  A recommendation strip filled by static/js/recommendations.js. Hidden if the API returns nothing.
+  Needs: url, title, subtitle, heading_id (passed with "include ... with").
+  (A {# #} comment must fit on one line, which is why this uses the comment tag.)
+{% endcomment %}
+<section class="section rec-strip" aria-labelledby="{{ heading_id }}" data-recommendations="{{ url }}">
+  <div class="section-head">
+    <div>
+      <h2 id="{{ heading_id }}">{{ title }}</h2>
+      <p data-rec-subtitle>{{ subtitle }}</p>
+    </div>
+    <div class="rec-strip__nav d-none d-md-flex" aria-hidden="true">
+      <button class="icon-btn" type="button" data-scroll="-1" tabindex="-1"><i class="bi bi-chevron-left"></i></button>
+      <button class="icon-btn" type="button" data-scroll="1" tabindex="-1"><i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="rec-track" data-rec-track aria-busy="true">
+    {% for _ in "12345" %}
+      <div class="rec-track__item"><div class="skeleton-card" aria-hidden="true">
+        <div class="skeleton skeleton-card__media"></div>
+        <div class="skeleton skeleton-card__line"></div>
+        <div class="skeleton skeleton-card__line skeleton-card__line--short"></div>
+      </div></div>
+    {% endfor %}
+  </div>
+</section>

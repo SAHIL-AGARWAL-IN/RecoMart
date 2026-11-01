@@ -59,6 +59,7 @@ def home(request):
         # 10 and 5 fill two rows of 5 on wide screens; extra cards are hidden on narrower ones.
         "trending": services.trending_products(limit=10),
         "deals": services.deal_products(limit=5),
+        "recently_viewed": services.recently_viewed(request),
     })
 
 
@@ -109,6 +110,7 @@ def product_detail(request, slug):
         "free_shipping_threshold": services.FREE_SHIPPING_THRESHOLD,
         "review_form": ReviewForm(instance=my_review),
         "my_review": my_review,
+        "recently_viewed": services.recently_viewed(request, exclude=product.id),
     })
 
 
