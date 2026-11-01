@@ -134,3 +134,15 @@ A:
 - Media queries in `theme.css` handle the header and the category tiles.
 - The filter panel becomes a slide-in drawer on phones.
 - We tested at 375 px (phone), 768 px (tablet) and 1280 px (laptop) with Playwright screenshots.
+
+### Phase 2 revisions (after review)
+- **Navbar:** a wishlist heart and a cart icon with count badges, and an account dropdown (Profile, Orders, Dashboard for admins, Log out). Guests get Log in / Register. The counts come from the `store_nav` context processor, so every page has them. The header search is hidden on the home page, because the hero already has one.
+- **Compact cards:** 4 per row on laptops and 5 on wide screens (Bootstrap `row-cols-xl-4 row-cols-xxl-5`). There are 20 products per page, because 20 divides by both 4 and 5, so rows are always full.
+- **Realistic seed data:** review stars are mostly 3–5. Each product's average is calibrated into 3.8–4.7, and about 15% of products are on a 25–50% sale.
+- **Bug found by looking at the page:** "Today's deals" wasn't sorted by discount. SQLite stores these prices as whole numbers and did *integer* division, so 6299 / 10999 gave 0 for every product. The fix is to `Cast(..., FloatField())` before dividing. A regression test now guards it.
+
+**Q: Why not compute the discount percentage in Python instead?**
+A: Sorting must happen in the database, so `ORDER BY` and `LIMIT` return only the top deals. Loading all products into Python just to sort them would be slow on a big catalog. That's why we annotate the ratio in the query.
+
+**Q: How do the badge counts appear on every page?**
+A: Through a context processor, `store/context_processors.py`. Django runs it on every request and adds `cart_count` and `wishlist_count` to every template's context.

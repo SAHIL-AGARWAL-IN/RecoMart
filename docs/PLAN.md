@@ -4,7 +4,7 @@
 
 ## Phase status
 - [x] Phase 1: Foundation (setup, apps, models, migrations, Django admin, seed data), branch `phase-1-foundation` (done, merged into `main`)
-- [x] Phase 2: Storefront UI (base.html, theme, auth pages, home, product list, product detail), branch `phase-2-storefront` (done, waiting for the user's OK to merge)
+- [x] Phase 2: Storefront UI (base.html, theme, auth pages, home, product list, product detail), branch `phase-2-storefront` (done, merged into `main`)
 - [ ] Phase 3: Shopping (cart, checkout, orders, wishlist, reviews, AJAX search & filters)
 - [ ] Phase 4: ML engine (features, training command, Joblib, recommendation API, "You may also like")
 - [ ] Phase 5: Enhancements (personalised feed, hybrid ranking, explanations, FBT, recently viewed)
