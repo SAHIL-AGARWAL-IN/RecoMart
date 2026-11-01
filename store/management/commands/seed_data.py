@@ -31,7 +31,7 @@ CUSTOMER_PASSWORD = "Customer@123"
 MAX_GALLERY_IMAGES = 3
 # About 15% of products get a big sale (25-50% off) so "Today's deals" stands out.
 BIG_SALE_SHARE = 0.15
-BIG_SALE_RANGE = (25, 50)
+BIG_SALE_RANGE = (25, 45)  # rounding down to a ...9 price can add a few points
 
 
 class Command(BaseCommand):
