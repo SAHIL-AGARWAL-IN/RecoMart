@@ -1,0 +1,15 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block page_title %}Delete {{ object }}{% endblock %}
+{% block heading %}Delete {{ object }}?{% endblock %}
+
+{% block dash_content %}
+<form class="panel" method="post" style="max-width: 560px;">
+  {% csrf_token %}
+  <p>This permanently removes <strong>{{ object }}</strong>. If it is used by past orders or products, it is kept and you'll see a message instead.</p>
+  <div class="d-flex gap-2">
+    <button class="btn btn-danger" type="submit">Delete</button>
+    <a class="btn btn-quiet" href="{{ back_url }}">Keep it</a>
+  </div>
+</form>
+{% endblock %}

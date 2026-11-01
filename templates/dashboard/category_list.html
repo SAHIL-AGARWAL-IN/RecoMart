@@ -1,0 +1,29 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block page_title %}Categories{% endblock %}
+{% block heading %}Categories{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="{% url 'dashboard:category_add' %}"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add category</a>{% endblock %}
+
+{% block dash_content %}
+<section class="panel">
+  <div class="table-scroll">
+    <table class="dash-table">
+      <thead><tr><th>Order</th><th>Category</th><th>Icon</th><th class="num">Products</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for category in object_list %}
+          <tr>
+            <td>{{ category.sort_order }}</td>
+            <td><a href="{% url 'dashboard:category_edit' category.pk %}">{{ category.name }}</a><div class="small text-muted">{{ category.description }}</div></td>
+            <td><i class="bi bi-{{ category.icon }}" aria-hidden="true"></i> <code>{{ category.icon }}</code></td>
+            <td class="num">{{ category.product_count }}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-quiet btn-sm" href="{% url 'dashboard:category_edit' category.pk %}" aria-label="Edit {{ category.name }}"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+              <a class="btn btn-quiet btn-sm" href="{% url 'dashboard:category_delete' category.pk %}" aria-label="Delete {{ category.name }}"><i class="bi bi-trash3" aria-hidden="true"></i></a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

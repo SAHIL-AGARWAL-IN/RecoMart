@@ -1,0 +1,43 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load store_tags %}
+
+{% block page_title %}Inventory{% endblock %}
+{% block heading %}Inventory{% endblock %}
+{% block subheading %}<p>Products with {{ threshold }} or fewer in stock, lowest first. Out-of-stock items are shown last in recommendations.</p>{% endblock %}
+
+{% block dash_content %}
+<form class="filter-bar" method="get">
+  <label class="form-label mb-0 align-self-center" for="below">Show stock at or below</label>
+  <input class="form-control" id="below" type="number" name="below" min="0" value="{{ threshold }}" style="min-width: 0; width: 6rem;">
+  <button class="btn btn-outline-primary" type="submit">Show</button>
+</form>
+
+<section class="panel">
+  <div class="table-scroll">
+    <table class="dash-table">
+      <thead><tr><th>Product</th><th>Category</th><th class="num">In stock</th><th>Restock</th></tr></thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td><a href="{% url 'dashboard:product_edit' product.pk %}">{{ product.name }}</a></td>
+            <td>{{ product.category.name }}</td>
+            <td class="num"><span class="stock-badge{% if product.stock == 0 %} stock-badge--out{% else %} stock-badge--low{% endif %}">{{ product.stock }}</span></td>
+            <td>
+              <form method="post" action="{% url 'dashboard:restock' %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="product_id" value="{{ product.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <label class="visually-hidden" for="add-{{ product.pk }}">Units to add to {{ product.name }}</label>
+                <input class="form-control form-control-sm" id="add-{{ product.pk }}" type="number" name="add" min="1" value="20" style="width: 5.5rem;">
+                <button class="btn btn-outline-primary btn-sm" type="submit">Add stock</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Nothing is running low.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

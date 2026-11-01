@@ -1,0 +1,45 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load store_tags %}
+
+{% block page_title %}Order {{ order.order_number }}{% endblock %}
+{% block heading %}Order {{ order.order_number }}{% endblock %}
+{% block subheading %}<p>Placed {{ order.created_at|date:"j M Y, g:i A" }} by {{ order.user.username }}</p>{% endblock %}
+{% block actions %}<a class="btn btn-quiet" href="{% url 'dashboard:orders' %}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>All orders</a>{% endblock %}
+
+{% block dash_content %}
+<div class="panel-grid panel-grid--wide">
+  <section class="panel" aria-labelledby="items-title">
+    <div class="panel__head"><h2 id="items-title">Items</h2></div>
+    <div class="table-scroll">
+      <table class="dash-table">
+        <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th></tr></thead>
+        <tbody>
+          {% for item in order.items.all %}
+            <tr><td>{{ item.product_name }}</td><td class="num">{{ item.quantity }}</td><td class="num">{{ item.unit_price|inr }}</td><td class="num">{{ item.line_total|inr }}</td></tr>
+          {% endfor %}
+          <tr><td colspan="3">Delivery</td><td class="num">{% if order.shipping_fee %}{{ order.shipping_fee|inr }}{% else %}Free{% endif %}</td></tr>
+          <tr><td colspan="3"><strong>Total</strong></td><td class="num"><strong>{{ order.total|inr }}</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div>
+    <section class="panel" aria-labelledby="status-title">
+      <div class="panel__head"><h2 id="status-title">Status</h2><span class="status-pill status-pill--{{ order.status }}">{{ order.get_status_display }}</span></div>
+      <form method="post" action="{% url 'dashboard:order_status' order.pk %}" class="d-flex gap-2 align-items-end">
+        {% csrf_token %}
+        <div class="flex-grow-1">
+          <label class="form-label" for="{{ status_form.status.id_for_label }}">Change status</label>
+          {{ status_form.status }}
+        </div>
+        <button class="btn btn-primary" type="submit">Update</button>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="ship-title">
+      <div class="panel__head"><h2 id="ship-title">Delivery and payment</h2></div>
+      <p class="mb-2">{{ order.full_name }}<br>{{ order.address_line }}<br>{{ order.city }}, {{ order.state }} {{ order.pincode }}<br>{{ order.phone }}</p>
+      <p class="mb-0">{{ order.get_payment_method_display }}{% if order.payment_ref %}<br><span class="small text-muted">{{ order.payment_ref }}</span>{% endif %}</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

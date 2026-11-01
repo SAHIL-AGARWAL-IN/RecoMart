@@ -1,0 +1,7 @@
+{% if change is None %}
+  <p class="stat__note">No earlier data to compare</p>
+{% elif change >= 0 %}
+  <p class="stat__note"><span class="delta delta--up"><i class="bi bi-arrow-up-right" aria-hidden="true"></i>{{ change }}%</span> vs previous period</p>
+{% else %}
+  <p class="stat__note"><span class="delta delta--down"><i class="bi bi-arrow-down-right" aria-hidden="true"></i>{{ change }}%</span> vs previous period</p>
+{% endif %}
