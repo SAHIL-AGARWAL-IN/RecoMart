@@ -2,26 +2,91 @@
 
 The ML maths lives in engine.py; this file connects it to Django models.
 """
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
+from datetime import timedelta
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
+from django.db.models import Case, Count, IntegerField, Sum, Value, When
+from django.utils import timezone
 
-from store.models import Product
-from store.services import ensure_session_key
+from store.models import Interaction, OrderItem, Product
+from store.services import ensure_session_key, trending_products
 
-from . import engine
+from . import engine, explain
 from .models import RecommendationData, RecommendationEvent, TrainingRun
 
 WIDGETS = {choice.value for choice in RecommendationEvent.Widget}
 VECTOR_DECIMALS = 5
+POPULARITY_DAYS = 30
+POPULARITY_CACHE_SECONDS = 300
+PROFILE_SIZE = 20          # how many recent interactions build a shopper's taste profile
+PROFILE_HALF_LIFE_DAYS = 30
+PERSONAL_CANDIDATES = 40
+SHOPPERS_LIKE_YOU_TOP = 3  # at most this many cards per strip get "Popular with shoppers like you"
 
 
 @dataclass
 class Suggestion:
     product: Product
-    score: float | None  # cosine similarity, or None for fallback suggestions
-    source: str          # "model" or "fallback"
+    score: float | None          # cosine similarity (None when it doesn't come from the model)
+    source: str                  # "model", "fallback", "personal", "trending" or "fbt"
+    final: float = 0.0           # hybrid score used for ordering
+    reasons: list = field(default_factory=list)  # "Why this?" chips
+    together: int = 0            # times bought together (frequently-bought-together only)
+
+
+# --------------------------------------------------------------- popularity and hybrid ranking
+def popularity_scores():
+    """{product_id: 0..1}: type-weighted shopper activity in the last 30 days, log-scaled.
+
+    Cached for 5 minutes because every recommendation request needs it.
+    """
+    scores = cache.get("recommender:popularity")
+    if scores is None:
+        since = timezone.now() - timedelta(days=POPULARITY_DAYS)
+        weight = Case(*[When(interaction_type=kind, then=Value(w)) for kind, w in settings.INTERACTION_WEIGHTS.items()],
+                      default=Value(0), output_field=IntegerField())
+        rows = (Interaction.objects.filter(timestamp__gte=since).values("product_id")
+                .annotate(total=Sum(weight)))
+        raw = {row["product_id"]: math.log1p(row["total"] or 0) for row in rows}
+        top = max(raw.values(), default=0) or 1.0
+        scores = {product_id: value / top for product_id, value in raw.items()}
+        cache.set("recommender:popularity", scores, POPULARITY_CACHE_SECONDS)
+    return scores
+
+
+def _rank(suggestions, ranking="hybrid"):
+    """Order suggestions: hybrid score (or pure similarity), with out-of-stock products last."""
+    weights = settings.RECOMMENDER["HYBRID_WEIGHTS"]
+    popularity = popularity_scores()
+    now = timezone.now()
+    for s in suggestions:
+        similarity = s.score or 0.0
+        if ranking == "similarity":
+            s.final = similarity
+        else:
+            age_days = (now - s.product.created_at).days
+            s.final = engine.hybrid_score(similarity, popularity.get(s.product.id, 0.0),
+                                          engine.recency_score(age_days), weights)
+    suggestions.sort(key=lambda s: (not s.product.in_stock, -s.final))
+    return suggestions
+
+
+def co_interest_counts(product):
+    """{other product id: number of logged-in shoppers who interacted with both}."""
+    shoppers = Interaction.objects.filter(product=product, user__isnull=False).values("user")
+    rows = (Interaction.objects.filter(user__in=shoppers).exclude(product=product)
+            .values("product_id").annotate(shoppers=Count("user", distinct=True)))
+    return {row["product_id"]: row["shoppers"] for row in rows}
+
+
+def _load(pairs, source):
+    products = Product.objects.filter(id__in=[pid for pid, _ in pairs], is_active=True).select_related("category")
+    by_id = {p.id: p for p in products}
+    return [Suggestion(by_id[pid], score, source) for pid, score in pairs if pid in by_id]
 
 
 # --------------------------------------------------------------- training results
@@ -50,27 +115,98 @@ def save_training_results(bundle, model_path):
 
 
 # --------------------------------------------------------------- serving
-def similar_products(product, limit=None):
-    """'You may also like' for a product: model neighbours, or same-category favourites as a fallback.
+def similar_products(product, limit=None, ranking="hybrid"):
+    """'You may also like' for a product, ranked by the hybrid score, each with its 'Why this?' reasons.
 
-    Out-of-stock products are moved to the end, so shoppers see things they can buy first.
+    Candidates are the model's nearest neighbours; a product added after training falls back to
+    popular products from its category. Out-of-stock products always go last.
     """
     limit = limit or settings.RECOMMENDER["TOP_N"]
     recommender = engine.get_recommender()
     if recommender and product.id in recommender:
-        pairs = recommender.similar(product.id, settings.RECOMMENDER["CACHE_TOP_N"])
-        source = "model"
+        suggestions = _load(recommender.similar(product.id, settings.RECOMMENDER["CACHE_TOP_N"]), "model")
     else:
-        # Not in the trained model (e.g. added after training): show popular items from its category.
         popular = (Product.objects.filter(category=product.category, is_active=True).exclude(pk=product.pk)
                    .order_by("-rating_count", "-rating_avg").values_list("id", flat=True)[:limit * 2])
-        pairs = [(pid, None) for pid in popular]
-        source = "fallback"
+        suggestions = _load([(pid, None) for pid in popular], "fallback")
 
-    products = Product.objects.filter(id__in=[pid for pid, _ in pairs], is_active=True).select_related("category")
-    by_id = {p.id: p for p in products}
-    suggestions = [Suggestion(by_id[pid], score, source) for pid, score in pairs if pid in by_id]
-    suggestions.sort(key=lambda s: not s.product.in_stock)  # stable sort keeps similarity order otherwise
+    chosen = _rank(suggestions, ranking)[:limit]
+    popularity, co_interest = popularity_scores(), co_interest_counts(product)
+    # Only the few strongest overlaps get "Popular with shoppers like you"; a chip on every card means nothing.
+    by_overlap = sorted(chosen, key=lambda s: -co_interest.get(s.product.id, 0))  # ties keep ranking order
+    strongest = {s.product.id for s in by_overlap[:SHOPPERS_LIKE_YOU_TOP]}
+    for s in chosen:
+        overlap = co_interest.get(s.product.id, 0) if s.product.id in strongest else 0
+        s.reasons = explain.similar_reasons(product, s.product, overlap, popularity.get(s.product.id, 0.0))
+    return chosen
+
+
+def trending_suggestions(limit=None):
+    limit = limit or settings.RECOMMENDER["TOP_N"]
+    return [Suggestion(p, None, "trending", reasons=["Trending"]) for p in trending_products(limit=limit)]
+
+
+def recommended_for(user, limit=None):
+    """'Recommended for you'. Returns (mode, suggestions) where mode is 'personal' or 'trending'.
+
+    The shopper's recent interactions (weighted by type and by how recent they are) are averaged
+    into one taste vector; products closest to it are ranked with the hybrid score. Products they
+    have already bought or looked at are left out, so the feed shows something new.
+    """
+    limit = limit or settings.RECOMMENDER["TOP_N"]
+    recommender = engine.get_recommender()
+    if recommender is None or not user.is_authenticated:
+        return "trending", trending_suggestions(limit)
+
+    recent = list(Interaction.objects.filter(user=user).order_by("-timestamp")
+                  .values_list("product_id", "interaction_type", "timestamp")[:PROFILE_SIZE])
+    now = timezone.now()
+    vectors, weights, seen = [], [], set()
+    for product_id, kind, when in recent:
+        seen.add(product_id)
+        if product_id in recommender:
+            decay = 0.5 ** ((now - when).days / PROFILE_HALF_LIFE_DAYS)  # half the weight every 30 days
+            vectors.append(recommender.vector(product_id))
+            weights.append(settings.INTERACTION_WEIGHTS.get(kind, 1) * decay)
+    if not vectors:
+        return "trending", trending_suggestions(limit)
+
+    profile = engine.profile_vector(vectors, weights)
+    purchased = set(OrderItem.objects.filter(order__user=user).values_list("product_id", flat=True))
+    candidates = recommender.nearest_to(profile, exclude=seen | purchased, n=PERSONAL_CANDIDATES)
+    chosen = _rank(_load(candidates, "personal"))[:limit]
+
+    viewed = {p.id: p for p in Product.objects.filter(id__in=[pid for pid in seen if pid in recommender])}
+    popularity = popularity_scores()
+    for s in chosen:
+        # Name the viewed product this suggestion is most similar to.
+        closest = max(viewed.values(), key=lambda v: float(recommender.vector(v.id) @ recommender.vector(s.product.id)))
+        s.reasons = explain.personal_reasons(s.product, closest, popularity.get(s.product.id, 0.0))
+    return "personal", chosen
+
+
+def frequently_bought_together(product_ids, limit=4):
+    """Products that appear in the same orders as `product_ids` (counted per order), excluding those ids.
+
+    If nobody has bought them together yet, fall back to products similar to the first one.
+    """
+    product_ids = list(product_ids)
+    if not product_ids:
+        return []
+    orders = OrderItem.objects.filter(product_id__in=product_ids).values("order_id")
+    rows = (OrderItem.objects.filter(order_id__in=orders).exclude(product_id__in=product_ids)
+            .values("product_id").annotate(orders=Count("order_id", distinct=True))
+            .order_by("-orders", "product_id")[:limit * 2])
+    counts = {row["product_id"]: row["orders"] for row in rows}
+    suggestions = _load([(pid, None) for pid in counts], "fbt")
+    if not suggestions:
+        first = Product.objects.filter(pk=product_ids[0]).first()
+        similar = similar_products(first, limit=limit * 2) if first else []
+        return [s for s in similar if s.product.id not in product_ids][:limit]
+    for s in suggestions:
+        s.together = counts[s.product.id]
+        s.reasons = explain.together_reasons(s.together)
+    suggestions.sort(key=lambda s: (not s.product.in_stock, -s.together))
     return suggestions[:limit]
 
 
