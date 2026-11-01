@@ -3,8 +3,8 @@ from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
-from django.db.models import Case, F, IntegerField, Q, Sum, Value, When
-from django.db.models.functions import Coalesce
+from django.db.models import Case, F, FloatField, IntegerField, Q, Sum, Value, When
+from django.db.models.functions import Cast, Coalesce
 from django.utils import timezone
 
 from .models import Interaction, Product
@@ -62,7 +62,9 @@ def recently_viewed(request, exclude=None, limit=8):
 def with_prices(queryset):
     """Annotate the price the customer pays and the price ratio (for 'biggest discount')."""
     final = Coalesce("discount_price", "price")
-    return queryset.annotate(final_price=final, price_ratio=final / F("price"))
+    # Cast to float first: SQLite would otherwise do integer division (6299 / 10999 = 0).
+    ratio = Cast(final, FloatField()) / Cast(F("price"), FloatField())
+    return queryset.annotate(final_price=final, price_ratio=ratio)
 
 
 def trending_products(limit=8, days=30):
