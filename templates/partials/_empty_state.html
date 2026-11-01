@@ -1,0 +1,7 @@
+{# Usage: {% include "partials/_empty_state.html" with icon="search" title="..." text="..." action_url="..." action_label="..." %} #}
+<div class="empty-state">
+  <span class="empty-state__icon"><i class="bi bi-{{ icon|default:'inbox' }}" aria-hidden="true"></i></span>
+  <h2 class="h4 mb-0">{{ title }}</h2>
+  {% if text %}<p>{{ text }}</p>{% endif %}
+  {% if action_url %}<a class="btn btn-primary mt-2" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+</div>

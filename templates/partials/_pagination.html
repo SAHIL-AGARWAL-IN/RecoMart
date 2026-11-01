@@ -1,0 +1,20 @@
+{% load store_tags %}
+{% if page.has_other_pages %}
+<nav class="mt-4" aria-label="Product pages">
+  <ul class="pagination justify-content-center flex-wrap">
+    {% if page.has_previous %}
+      <li class="page-item"><a class="page-link" href="{% query_with page=page.previous_page_number %}" aria-label="Previous page"><i class="bi bi-chevron-left" aria-hidden="true"></i></a></li>
+    {% endif %}
+    {% for number in page.paginator.page_range %}
+      {% if number == page.number %}
+        <li class="page-item active" aria-current="page"><span class="page-link">{{ number }}</span></li>
+      {% else %}
+        <li class="page-item"><a class="page-link" href="{% query_with page=number %}">{{ number }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page.has_next %}
+      <li class="page-item"><a class="page-link" href="{% query_with page=page.next_page_number %}" aria-label="Next page"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
