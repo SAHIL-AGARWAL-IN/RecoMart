@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{% if category %}{{ category.name }}{% elif filters.q %}Results for "{{ filters.q }}"{% else %}All products{% endif %} | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <nav aria-label="Breadcrumb">
+    <ol class="breadcrumb mb-2">
+      <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Home</a></li>
+      {% if category %}
+        <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">All products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+      {% else %}
+        <li class="breadcrumb-item active" aria-current="page">All products</li>
+      {% endif %}
+    </ol>
+  </nav>
+
+  <header class="mb-4">
+    <h1 class="mb-1">
+      {% if filters.q %}Results for "{{ filters.q }}"{% elif category %}{{ category.name }}{% else %}All products{% endif %}
+    </h1>
+    {% if category and not filters.q %}<p class="text-muted mb-0">{{ category.description }}</p>{% endif %}
+  </header>
+
+  <div class="row g-4">
+    <aside class="col-lg-3">
+      <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="filters" aria-labelledby="filters-title">
+        <div class="offcanvas-header">
+          <h2 class="offcanvas-title h5" id="filters-title">Filters</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#filters" aria-label="Close filters"></button>
+        </div>
+        <div class="offcanvas-body d-block">
+          <form class="filter-panel w-100" method="get" action="{% if category %}{{ category.get_absolute_url }}{% else %}{% url 'store:product_list' %}{% endif %}" id="filter-form">
+            {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+            <input type="hidden" name="sort" value="{{ filters.sort }}">
+
+            <nav class="filter-group" aria-labelledby="category-filter-title">
+              <h2 class="filter-title" id="category-filter-title">Category</h2>
+              <ul class="filter-links">
+                <li><a href="{% url 'store:product_list' %}{% if filters.q %}?q={{ filters.q|urlencode }}{% endif %}"{% if not category %} aria-current="page"{% endif %}>All categories</a></li>
+                {% for cat in categories %}
+                  <li><a href="{{ cat.get_absolute_url }}{% if filters.q %}?q={{ filters.q|urlencode }}{% endif %}"{% if category == cat %} aria-current="page"{% endif %}>{{ cat.name }}</a></li>
+                {% endfor %}
+              </ul>
+            </nav>
+
+            <fieldset class="filter-group">
+              <legend>Price (₹)</legend>
+              <div class="d-flex align-items-center gap-2">
+                <label class="visually-hidden" for="min-price">Minimum price</label>
+                <input class="form-control" id="min-price" type="number" name="min_price" min="0" step="1" inputmode="numeric"
+                       placeholder="Min" value="{{ filters.min_price|default_if_none:'' }}">
+                <span class="text-muted" aria-hidden="true">to</span>
+                <label class="visually-hidden" for="max-price">Maximum price</label>
+                <input class="form-control" id="max-price" type="number" name="max_price" min="0" step="1" inputmode="numeric"
+                       placeholder="Max" value="{{ filters.max_price|default_if_none:'' }}">
+              </div>
+            </fieldset>
+
+            <fieldset class="filter-group">
+              <legend>Customer rating</legend>
+              {% for value in "4321" %}
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="rating" id="rating-{{ value }}" value="{{ value }}"
+                         {% if filters.rating|stringformat:"s" == value %}checked{% endif %}>
+                  <label class="form-check-label" for="rating-{{ value }}">{{ value }} star{{ value|pluralize }} and up</label>
+                </div>
+              {% endfor %}
+            </fieldset>
+
+            <div class="filter-group d-grid gap-2">
+              <button class="btn btn-primary" type="submit">Apply filters</button>
+              {% if has_filters %}
+                <a class="btn btn-quiet" href="{% if category %}{{ category.get_absolute_url }}{% else %}{% url 'store:product_list' %}{% endif %}">Clear filters</a>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    <section class="col-lg-9" aria-labelledby="results-count">
+      <div class="list-toolbar">
+        <p class="mb-0 text-muted" id="results-count">
+          {% if page.paginator.count %}
+            Showing {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }} products
+          {% else %}No products found{% endif %}
+        </p>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filters" aria-controls="filters">
+            <i class="bi bi-sliders me-1" aria-hidden="true"></i>Filters
+          </button>
+          <label class="visually-hidden" for="sort">Sort products</label>
+          <select class="form-select w-auto" id="sort" name="sort" form="sort-form" data-autosubmit>
+            {% for value, label in sort_options %}
+              <option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <form id="sort-form" method="get" class="d-none">
+            {% for key, value in request.GET.items %}{% if key != "sort" and key != "page" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+            <noscript><button type="submit">Sort</button></noscript>
+          </form>
+        </div>
+      </div>
+
+      {% if page.object_list %}
+        <div class="row row-cols-2 row-cols-md-3 g-3">
+          {% for product in page.object_list %}
+            <div class="col">{% include "partials/_product_card.html" %}</div>
+          {% endfor %}
+        </div>
+        {% include "partials/_pagination.html" %}
+      {% else %}
+        {% url 'store:product_list' as all_url %}
+        {% include "partials/_empty_state.html" with icon="search" title="No products match these filters" text="Try a wider price range, a lower rating, or a different search word." action_url=all_url action_label="Show all products" %}
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
