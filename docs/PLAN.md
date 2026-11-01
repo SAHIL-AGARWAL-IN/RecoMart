@@ -9,7 +9,8 @@
 - [x] Phase 4: ML engine (features, training command, Joblib, recommendation API, "You may also like"), branch `phase-4-ml-engine` (done, merged into `main`)
 - [x] Phase 5: Enhancements (personalised feed, hybrid ranking, explanations, FBT, recently viewed), branch `phase-5-enhancements` (done, waiting for the user's OK to merge)
 - [ ] Phase 6: Admin dashboard, ML Insights, A/B toggle
-- [ ] Phase 7: Polish (dark mode, responsiveness, tests, README)
+- [ ] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5)
+- [ ] Phase 8: Polish (dark mode, responsiveness, tests, README)
 
 Each phase ends with:
 - check, tests and Playwright screenshots all green
@@ -214,7 +215,22 @@ Tentative brand: a deep teal primary, a marigold/saffron accent for deals and ba
   - CTR per widget
   - A/B CTR comparison with a two-proportion z-test
 
-**Phase 7: Polish**
+**Phase 7: Shopping assistant chatbot** (added by the user; offline, no API key)
+- A chat bubble on every page opens a small panel. Messages go to `POST /api/assistant/` (JSON, CSRF-protected).
+- New `assistant` app. Intent detection with a TF-IDF + cosine match against example phrases per intent, plus simple rules (regex) for prices and order numbers. Easy to explain in the viva.
+- Intents:
+  - product search with filters ("phones under 20000", "4 star books")
+  - similar items ("something like Atomic Habits"), answered by the recommender
+  - personal picks, answered by the For You feed
+  - order status ("where is my order", "RM-000123"); logged-in only, own orders only
+  - cart summary
+  - FAQs: delivery, payment, returns, about the demo
+  - greeting and help
+- Answers are short text plus product cards (the same card JS as the recommendation strips), and quick-reply chips.
+- Guardrails: a polite fallback when it isn't sure, never shows another user's data, rate-limited per session.
+- Tests for intent detection, filters parsed from text, order privacy and the API.
+
+**Phase 8: Polish**
 - Dark/light toggle stored in localStorage, with an inline head script so the page doesn't flash.
 - Responsive and accessibility pass on every page: skip link, focus-visible, aria-live toasts, labels and alt text.
 - Empty-state illustrations and 404/500 pages.
