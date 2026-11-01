@@ -67,7 +67,8 @@ def rank_similar(matrix, labels, centers, top_n):
         cluster_order = np.argsort(np.linalg.norm(centers - vector, axis=1))  # own cluster first
         ranked = []
         for cluster in cluster_order:
-            candidates = [j for j in members[cluster] if j != i]
+            # .get: K-Means can leave a cluster empty when products are identical
+            candidates = [j for j in members.get(cluster, []) if j != i]
             ranked.extend(sorted(candidates, key=lambda j: -similarity[i, j]))
             if len(ranked) >= top_n:
                 break
@@ -98,6 +99,7 @@ def train(frame, k=None, k_min=None, k_max=None, random_state=None, top_n=None):
     product_ids = [int(i) for i in frame["id"]]
     rows, top_scores = rank_similar(matrix, model.labels_, model.cluster_centers_, top_n)
     labels, counts = np.unique(model.labels_, return_counts=True)
+    pca = PCA(n_components=2, random_state=random_state)  # only used to draw the clusters in 2-D
 
     return {
         "version": None,  # set by save()
@@ -116,7 +118,8 @@ def train(frame, k=None, k_min=None, k_max=None, random_state=None, top_n=None):
         "top_n": top_n,
         "top_ids": [[product_ids[j] for j in row] for row in rows],
         "top_scores": top_scores,
-        "pca_2d": PCA(n_components=2, random_state=random_state).fit_transform(matrix).round(4),
+        "pca_2d": pca.fit_transform(matrix).round(4),
+        "pca_variance": round(float(pca.explained_variance_ratio_.sum()), 4),  # share of variation the 2-D view keeps
         "duration_seconds": round(time.perf_counter() - started, 2),
     }
 
