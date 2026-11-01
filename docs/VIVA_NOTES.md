@@ -146,3 +146,69 @@ A: Sorting must happen in the database, so `ORDER BY` and `LIMIT` return only th
 
 **Q: How do the badge counts appear on every page?**
 A: Through a context processor, `store/context_processors.py`. Django runs it on every request and adds `cart_count` and `wishlist_count` to every template's context.
+
+---
+
+## Phase 3: Shopping (cart, checkout, orders, wishlist, reviews, live search, AJAX filters)
+
+### What we built
+- **Cart** (`store/cart.py`).
+  - Guests and logged-in users can add, change and remove items. Quantities are capped at stock.
+  - The summary shows subtotal, delivery and total, and a "₹X more for free delivery" bar.
+  - When a guest logs in, their cart is merged into their account.
+- **AJAX everywhere.** The "Add to cart" button, the cart page, the wishlist heart and the filters all use `fetch()` with JSON, so the page never reloads. A toast confirms each action, and the navbar badges update live.
+- **Checkout** (`services.place_order`).
+  - Delivery address plus a simulated payment by UPI, card or cash on delivery.
+  - The UPI ID, card number (Luhn check), expiry, CVV, PIN code and phone are all validated.
+  - The order, its items and the "purchase" interactions are created, stock goes down and the cart is cleared, all in one database transaction.
+- **Orders.** A thank-you page, an order history, and an order detail page with a Placed → Shipped → Delivered timeline.
+- **Wishlist.** A heart on every product toggles it over AJAX. Guests are sent to the login page.
+- **Reviews.** One review per user per product, which you can edit later. A "Verified purchase" badge shows if you bought it, and the product's average rating updates automatically.
+- **Live search.**
+  - Results with thumbnails appear under the search box as you type.
+  - Matching text is highlighted, and arrow keys, Enter and Escape work.
+- **AJAX filters.** Category, price, rating, sort and page change without a reload. Skeleton cards show while loading, and the browser URL updates so the result can be bookmarked.
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| Guest cart id is stored **inside** the session, not found by session key | Django gives you a new session key when you log in (this prevents "session fixation" attacks). The session data is kept, though, so the cart id survives and we can merge the guest cart into the user's cart. |
+| `@transaction.atomic` around `place_order` | All-or-nothing. If any item is out of stock, every change (stock, order, items) is rolled back, so the database never ends up with half an order. |
+| Conditional stock update: `filter(stock__gte=qty).update(stock=F("stock") - qty)` | The check and the decrement happen in one SQL statement inside the database. Two shoppers can't both buy the last item, because the second update matches 0 rows. |
+| `OrderItem.unit_price` is copied from the product | The order keeps the price paid, even if the product's price changes later. |
+| Only the card's last 4 digits are kept, and the CVV is never stored | Real shops must never store full card numbers (PCI rules). We copy the habit even though payment is fake. |
+| Order pages use `get_object_or_404(Order, pk=pk, user=request.user)` | Someone else's order id gives "not found", so another person's address can't leak by guessing ids. |
+| The filter form works without JavaScript; `filters.js` only upgrades it | Progressive enhancement. The site still works if JS fails, and the server stays the single source of truth for the grid HTML. |
+| Live search waits 300 ms and cancels older requests (AbortController) | Typing "phone" doesn't send 5 requests, and a slow old answer can't overwrite a newer one. |
+| Event delegation (`document.addEventListener("click", …)`) | One listener handles every "Add to cart" button, including cards loaded later by AJAX. |
+
+### Likely viva questions
+**Q: What is AJAX, and where do you use it?**
+A: It means JavaScript asks the server for data in the background with `fetch()` and updates part of the page without a full reload. We use it for add-to-cart, the cart page, the wishlist heart, live search and the product filters. The server answers with `JsonResponse`.
+
+**Q: How is the AJAX request protected from CSRF?**
+A: Django sets a `csrftoken` cookie. Our `fetchJSON()` helper in `main.js` reads it and sends it in the `X-CSRFToken` header. Django's CSRF middleware rejects any POST without a matching token.
+
+**Q: What happens if two people buy the last item at the same time?**
+A: Each checkout runs `UPDATE product SET stock = stock - qty WHERE id = … AND stock >= qty`. The database runs these one after another. The first succeeds; the second matches 0 rows, so we raise `OutOfStockError`, the transaction rolls back, and that shopper sees a friendly message.
+
+**Q: What does `@transaction.atomic` do?**
+A: It wraps the function in a database transaction. If any line raises an error, everything done inside it is undone (rolled back). If it finishes, it is all saved (committed) together.
+
+**Q: How does the cart work for someone who isn't logged in?**
+A: We create a `Cart` row with no user and keep its id in `request.session["cart_id"]`. The session is tied to the browser by a cookie. When they log in, a `user_logged_in` signal handler (`accounts/signals.py`) moves the items into their own cart.
+
+**Q: What is a Django signal?**
+A: A way to run code when something happens elsewhere in Django, without changing that code. We listen for `user_logged_in` to merge carts.
+
+**Q: What is debouncing?**
+A: Waiting until the user stops typing for a short time (300 ms) before acting. Without it, live search would call the server on every key press.
+
+**Q: How do you check a card number without a payment gateway?**
+A: With the Luhn algorithm, a checksum every real card number satisfies. From the right, double every second digit (subtract 9 if the result is over 9), add everything up, and the total must divide by 10. `4111 1111 1111 1111` passes.
+
+**Q: Why render the product grid HTML on the server for AJAX, instead of building it in JavaScript?**
+A: The same Django template (`_product_results.html`) is used for the normal page and the AJAX update. That way the card design lives in one place, and Django's auto-escaping protects against XSS.
+
+**Q: How does the wishlist heart know a product is already saved?**
+A: The `store_nav` context processor puts the set of the user's wishlisted product ids into every template. The card checks `product.id in wishlist_ids` and sets `aria-pressed="true"`, which the CSS uses to show a filled heart.
