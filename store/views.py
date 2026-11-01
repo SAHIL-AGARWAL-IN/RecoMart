@@ -1,12 +1,14 @@
 """Storefront pages. Views stay thin: queries and rules live in services.py."""
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, render
 
 from . import services
+from .cart import get_cart
 from .models import Category, Interaction, Product
 
-PRODUCTS_PER_PAGE = 12
+PRODUCTS_PER_PAGE = 20  # divisible by 4 and 5, so full rows at both grid widths
 
 # The home hero draws three product "clusters", a picture of what K-Means does.
 # Positions are percentages of a square box: label (x, y) and three product nodes.
@@ -51,8 +53,9 @@ def home(request):
         "categories": categories,
         "hero": _hero_clusters(),
         "product_total": Product.objects.filter(is_active=True).count(),
-        "trending": services.trending_products(limit=8),
-        "deals": services.deal_products(limit=4),
+        # 10 and 5 fill two rows of 5 on wide screens; extra cards are hidden on narrower ones.
+        "trending": services.trending_products(limit=10),
+        "deals": services.deal_products(limit=5),
     })
 
 
@@ -94,3 +97,25 @@ def product_detail(request, slug):
         "savings": product.price - product.effective_price,
         "free_shipping_threshold": services.FREE_SHIPPING_THRESHOLD,
     })
+
+
+def cart(request):
+    """Read-only cart for now; adding, updating and removing items arrives in Phase 3."""
+    current = get_cart(request)
+    items = current.items.select_related("product", "product__category") if current else []
+    return render(request, "store/cart.html", {
+        "items": items,
+        "subtotal": current.subtotal if current else 0,
+    })
+
+
+@login_required
+def wishlist(request):
+    items = request.user.wishlist_items.select_related("product", "product__category")
+    return render(request, "store/wishlist.html", {"products": [item.product for item in items]})
+
+
+@login_required
+def order_list(request):
+    orders = request.user.orders.prefetch_related("items__product")
+    return render(request, "store/order_list.html", {"orders": orders})

@@ -103,3 +103,81 @@ class ProductDetailTests(StorefrontTestCase):
         breakdown = self.client.get(self.phone.get_absolute_url()).context["breakdown"]
         self.assertEqual(breakdown[0], {"stars": 5, "count": 2, "percent": 67})
         self.assertEqual(breakdown[3], {"stars": 2, "count": 1, "percent": 33})
+
+
+class NavbarTests(StorefrontTestCase):
+    def test_header_search_is_hidden_on_home_only(self):
+        self.assertNotContains(self.client.get(reverse("store:home")), 'id="site-search"')
+        self.assertContains(self.client.get(reverse("store:product_list")), 'id="site-search"')
+
+    def test_guest_sees_login_and_register(self):
+        response = self.client.get(reverse("store:home"))
+        self.assertContains(response, reverse("accounts:register"))
+        self.assertNotContains(response, "Account menu")
+
+    def test_customer_menu_has_orders_but_no_dashboard(self):
+        self.client.force_login(make_user())
+        response = self.client.get(reverse("store:home"))
+        self.assertContains(response, reverse("store:order_list"))
+        self.assertNotContains(response, ">Dashboard<")
+
+    def test_admin_menu_has_dashboard(self):
+        self.client.force_login(make_user("boss", role="admin"))
+        self.assertContains(self.client.get(reverse("store:home")), "Dashboard")
+
+    def test_badges_show_cart_and_wishlist_counts(self):
+        from store.models import Cart, CartItem, WishlistItem
+
+        user = make_user()
+        cart = Cart.objects.create(user=user)
+        CartItem.objects.create(cart=cart, product=self.phone, quantity=2)
+        WishlistItem.objects.create(user=user, product=self.laptop)
+        self.client.force_login(user)
+        response = self.client.get(reverse("store:home"))
+        self.assertEqual(response.context["cart_count"], 2)
+        self.assertEqual(response.context["wishlist_count"], 1)
+        self.assertContains(response, 'aria-label="Cart, 2 items"')
+
+
+class AccountPagesTests(StorefrontTestCase):
+    def test_empty_cart_shows_empty_state(self):
+        self.assertContains(self.client.get(reverse("store:cart")), "Your cart is empty")
+
+    def test_wishlist_and_orders_require_login(self):
+        for name in ("store:wishlist", "store:order_list"):
+            response = self.client.get(reverse(name))
+            self.assertEqual(response.status_code, 302, name)
+            self.assertIn(reverse("accounts:login"), response.url)
+
+    def test_orders_page_lists_only_my_orders(self):
+        from decimal import Decimal
+
+        from store.models import Order
+
+        me, other = make_user("me"), make_user("other")
+        details = dict(full_name="X", phone="9999999999", address_line="1 Road", city="Pune", state="MH",
+                       pincode="411001", payment_method="upi", subtotal=Decimal("500"), total=Decimal("500"))
+        mine = Order.objects.create(user=me, **details)
+        theirs = Order.objects.create(user=other, **details)
+        self.client.force_login(me)
+        response = self.client.get(reverse("store:order_list"))
+        self.assertContains(response, mine.order_number)
+        self.assertNotContains(response, theirs.order_number)
+
+
+class DiscountOrderingTests(TestCase):
+    """Regression: SQLite integer division made every price ratio 0, so deals were unsorted."""
+
+    def test_deals_are_sorted_by_biggest_percentage_discount(self):
+        category = make_category()
+        small = make_product("Small Sale", category=category, price="10999", discount_price="9999")   # 9% off
+        big = make_product("Big Sale", category=category, price="10999", discount_price="6299")       # 43% off
+        medium = make_product("Medium Sale", category=category, price="399", discount_price="299")    # 25% off
+        self.assertEqual(list(services.deal_products()), [big, medium, small])
+
+    def test_biggest_discount_sort_on_product_list(self):
+        category = make_category()
+        make_product("No Sale", category=category, price="500")
+        make_product("Half Off", category=category, price="1000", discount_price="500")
+        response = self.client.get(reverse("store:product_list"), {"sort": "discount"})
+        self.assertEqual(response.context["page"].object_list[0].name, "Half Off")

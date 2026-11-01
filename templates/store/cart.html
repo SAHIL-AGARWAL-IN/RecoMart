@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load store_tags %}
+
+{% block title %}Your cart | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container pt-4">
+  <h1 class="mb-4">Your cart</h1>
+  {% if items %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <ul class="line-items">
+          {% for item in items %}
+            <li class="line-item">
+              <a class="line-item__media" href="{{ item.product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+                {% if item.product.image %}<img src="{{ item.product.image.url }}" alt="" width="88" height="88" loading="lazy">{% endif %}
+              </a>
+              <div class="line-item__info">
+                <a class="line-item__name" href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a>
+                <span class="text-muted small">Quantity {{ item.quantity }} × {{ item.product.effective_price|inr }}</span>
+              </div>
+              <strong class="line-item__total">{{ item.line_total|inr }}</strong>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-lg-4">
+        <div class="buy-box">
+          <div class="d-flex justify-content-between mb-3"><span>Subtotal</span><strong>{{ subtotal|inr }}</strong></div>
+          <button class="btn btn-primary btn-lg w-100" type="button" disabled>Checkout</button>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    {% url 'store:product_list' as shop_url %}
+    {% include "partials/_empty_state.html" with icon="bag" title="Your cart is empty" text="Products you add to your cart will show up here." action_url=shop_url action_label="Shop now" %}
+  {% endif %}
+</div>
+{% endblock %}

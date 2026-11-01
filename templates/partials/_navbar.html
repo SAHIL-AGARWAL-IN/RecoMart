@@ -7,24 +7,43 @@
         RecoMart
       </a>
 
-      <form class="search-field" action="{% url 'store:product_list' %}" method="get" role="search">
-        <label for="site-search" class="visually-hidden">Search products</label>
-        <i class="bi bi-search" aria-hidden="true"></i>
-        <input id="site-search" class="form-control" type="search" name="q" value="{{ request.GET.q }}"
-               placeholder="Search phones, books, sneakers…" autocomplete="off">
-      </form>
+      {# The home page hero has its own big search box, so the header one is hidden there. #}
+      {% if request.resolver_match.url_name != "home" %}
+        <form class="search-field" action="{% url 'store:product_list' %}" method="get" role="search">
+          <label for="site-search" class="visually-hidden">Search products</label>
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="site-search" class="form-control" type="search" name="q" value="{{ request.GET.q }}"
+                 placeholder="Search phones, books, sneakers…" autocomplete="off">
+        </form>
+      {% else %}
+        <span class="header-spacer" aria-hidden="true"></span>
+      {% endif %}
 
-      <nav class="header-actions" aria-label="Account">
+      <nav class="header-actions" aria-label="Your shopping">
+        <a class="icon-btn" href="{% url 'store:wishlist' %}" aria-label="Wishlist, {{ wishlist_count }} item{{ wishlist_count|pluralize }}">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+          <span class="icon-btn__count" data-wishlist-count{% if not wishlist_count %} hidden{% endif %}>{{ wishlist_count }}</span>
+        </a>
+        <a class="icon-btn" href="{% url 'store:cart' %}" aria-label="Cart, {{ cart_count }} item{{ cart_count|pluralize }}">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          <span class="icon-btn__count" data-cart-count{% if not cart_count %} hidden{% endif %}>{{ cart_count }}</span>
+        </a>
+
         {% if user.is_authenticated %}
           <div class="dropdown">
-            <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu for {{ user.first_name|default:user.username }}">
+            <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    aria-label="Account menu for {{ user.first_name|default:user.username }}">
               <i class="bi bi-person-circle" aria-hidden="true"></i>
               <span class="icon-btn__label">{{ user.first_name|default:user.username }}</span>
+              <i class="bi bi-chevron-down icon-btn__caret" aria-hidden="true"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person me-2" aria-hidden="true"></i>Your profile</a></li>
+              <li class="dropdown-header">Signed in as <strong>{{ user.username }}</strong></li>
+              <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person me-2" aria-hidden="true"></i>Profile</a></li>
+              <li><a class="dropdown-item" href="{% url 'store:order_list' %}"><i class="bi bi-box-seam me-2" aria-hidden="true"></i>Orders</a></li>
               {% if user.is_store_admin %}
-                <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Admin panel</a></li>
+                {# Points at Django admin until the custom dashboard is built in Phase 6. #}
+                <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Dashboard</a></li>
               {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>
@@ -36,10 +55,11 @@
             </ul>
           </div>
         {% else %}
-          <a class="icon-btn" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" aria-label="Log in">
+          <a class="icon-btn d-md-none" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" aria-label="Log in or register">
             <i class="bi bi-person" aria-hidden="true"></i>
-            <span class="icon-btn__label">Log in</span>
           </a>
+          <a class="btn btn-quiet btn-sm d-none d-md-inline-flex ms-1" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Log in</a>
+          <a class="btn btn-primary btn-sm d-none d-md-inline-flex" href="{% url 'accounts:register' %}">Register</a>
         {% endif %}
       </nav>
     </div>
