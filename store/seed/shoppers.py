@@ -17,6 +17,9 @@ from store.services import shipping_fee_for
 
 DAYS_OF_HISTORY = 90
 REC_EVENT_DAYS = 30
+# Real shops show mostly 3-5 star reviews, with product averages in this range.
+RATING_AVG_RANGE = (3.8, 4.7)
+MIN_REVIEWS_PER_PRODUCT = 5
 # The same base click rate is used for both A/B variants, so the seed does not decide the test.
 SIMULATED_CTR = {"similar": 0.05, "for_you": 0.07, "trending": 0.04, "fbt": 0.06}
 
@@ -77,7 +80,10 @@ class ShopperSimulator:
                                              interaction_type=kind, quantity=quantity, timestamp=when))
 
     def _rating_for(self, product):
-        return max(1, min(5, round(self.rng.gauss(self.base_ratings[product.id], 0.8))))
+        """Mostly 3-5 stars; better products (higher source rating) get more 5s."""
+        quality = min(1.0, max(0.0, (self.base_ratings[product.id] - 2.5) / 2.5))  # 0..1
+        weights = {1: 0.02, 2: 0.04, 3: 0.20 - 0.08 * quality, 4: 0.42, 5: 0.22 + 0.22 * quality}
+        return self.rng.choices(list(weights), weights=list(weights.values()))[0]
 
     def _add_review(self, user, product, when):
         key = (user.id, product.id)
@@ -158,8 +164,8 @@ class ShopperSimulator:
     def _phone(self):
         return f"{self.rng.choice('6789')}{self.rng.randint(0, 999_999_999):09d}"
 
-    def top_up_reviews(self, customers, minimum=2):
-        """Make sure every product shows a few ratings, so no card says '0 reviews'."""
+    def top_up_reviews(self, customers, minimum=MIN_REVIEWS_PER_PRODUCT):
+        """Make sure every product has a few ratings, so no card says '0 reviews'."""
         counts = {}
         for review in self.reviews:
             counts[review.product.id] = counts.get(review.product.id, 0) + 1
@@ -170,6 +176,23 @@ class ShopperSimulator:
                 for user in reviewers:
                     when = self.now - timedelta(days=self.rng.uniform(1, DAYS_OF_HISTORY))
                     self._add_review(user, product, when)
+
+    def calibrate_ratings(self, low=RATING_AVG_RANGE[0], high=RATING_AVG_RANGE[1]):
+        """Nudge single reviews up or down a star until each product's average is in [low, high]."""
+        by_product = {}
+        for review in self.reviews:
+            by_product.setdefault(review.product.id, []).append(review)
+        for reviews in by_product.values():
+            average = lambda: sum(r.rating for r in reviews) / len(reviews)
+            while average() > high:
+                review = max(reviews, key=lambda r: (r.rating, self.rng.random()))
+                review.rating -= 1
+            while average() < low:
+                review = min(reviews, key=lambda r: (r.rating, self.rng.random()))
+                review.rating += 1
+            for review in reviews:  # keep the comment consistent with the final rating
+                if review.comment not in COMMENTS[review.rating]:
+                    review.comment = self.rng.choice(COMMENTS[review.rating])
 
     # ------------------------------------------------- recommendation events
     def simulate_rec_events(self, customers, count=2500):

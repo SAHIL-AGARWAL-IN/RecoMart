@@ -18,7 +18,7 @@ from faker import Faker
 from recommender.models import RecommendationData, RecommendationEvent, TrainingRun
 from store.models import (Cart, Category, Interaction, Order, Product, ProductImage, Review, WishlistItem)
 from store.seed import images
-from store.seed.catalog import CATEGORIES, build_catalog
+from store.seed.catalog import CATEGORIES, build_catalog, discounted_price
 from store.seed.photos import ensure_images
 from store.seed.shoppers import ShopperSimulator
 
@@ -29,6 +29,9 @@ DEMO_CUSTOMER = {"username": "priya", "password": "Customer@123", "first_name": 
                  "preferred": ["electronics", "books"]}
 CUSTOMER_PASSWORD = "Customer@123"
 MAX_GALLERY_IMAGES = 3
+# About 15% of products get a big sale (25-50% off) so "Today's deals" stands out.
+BIG_SALE_SHARE = 0.15
+BIG_SALE_RANGE = (25, 50)
 
 
 class Command(BaseCommand):
@@ -77,6 +80,7 @@ class Command(BaseCommand):
             for _ in range(options["guests"]):
                 sim.simulate_guest(sessions=rng.randint(1, 3))
             sim.top_up_reviews(customers)
+            sim.calibrate_ratings()
 
             Interaction.objects.bulk_create(sim.interactions, batch_size=1000)
             WishlistItem.objects.bulk_create(sim.wishlist, batch_size=1000)
@@ -104,7 +108,12 @@ class Command(BaseCommand):
             for index, row in enumerate(CATEGORIES)
         }
 
+    def _apply_big_sales(self, specs, rng):
+        for spec in rng.sample(specs, k=round(len(specs) * BIG_SALE_SHARE)):
+            spec["discount_price"] = discounted_price(spec["price"], rng.uniform(*BIG_SALE_RANGE))
+
     def _create_products(self, specs, categories, rng):
+        self._apply_big_sales(specs, rng)
         used_slugs, products = set(), []
         now = timezone.now()
         for spec in specs:

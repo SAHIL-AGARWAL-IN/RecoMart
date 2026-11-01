@@ -9,7 +9,7 @@ from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, TestCase, override_settings
 
 from recommender.models import RecommendationEvent
-from store.models import Category, Interaction, Order, Product
+from store.models import Category, Interaction, Order, Product, Review
 from store.seed.catalog import PER_CATEGORY, build_catalog, nice_price
 
 User = get_user_model()
@@ -69,10 +69,19 @@ class SeedCommandTests(TestCase):
         self.assertTrue(priya.check_password("Customer@123"))
         self.assertTrue(Interaction.objects.filter(user=priya).exists())
 
-        # Every product has an image file on disk and a rating.
+        # Every product has an image file on disk and a realistic rating.
         for product in Product.objects.all():
             self.assertTrue(Path(self.media_dir, product.image.name).exists(), product.image.name)
-            self.assertGreater(product.rating_count, 0, product.name)
+            self.assertGreaterEqual(product.rating_count, 3, product.name)
+            self.assertTrue(Decimal("3.8") <= product.rating_avg <= Decimal("4.7"), (product.name, product.rating_avg))
+        low_star_share = Review.objects.filter(rating__lte=2).count() / Review.objects.count()
+        self.assertLess(low_star_share, 0.15)
+
+        # About 15% of products are on a big sale (25-50% off).
+        products = list(Product.objects.all())
+        big_sales = [p for p in products if p.discount_percent >= 25]
+        self.assertTrue(0.12 <= len(big_sales) / len(products) <= 0.25, len(big_sales))
+        self.assertTrue(all(p.discount_percent <= 50 for p in products))
 
         # Order totals add up.
         self.assertTrue(Order.objects.exists())
