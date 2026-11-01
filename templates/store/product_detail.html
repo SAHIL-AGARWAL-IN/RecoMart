@@ -157,6 +157,30 @@
     </div>
   </section>
 
-  {% comment %}"You may also like" (recommendations) is added here in Phase 4.{% endcomment %}
+  {# Filled by static/js/recommendations.js from the recommendation API. Hidden if nothing comes back. #}
+  <section class="section rec-strip" aria-labelledby="similar-heading"
+           data-recommendations="{% url 'recommender:similar' product.id %}">
+    <div class="section-head">
+      <div>
+        <h2 id="similar-heading">You may also like</h2>
+        <p>Picked by our recommendation model from products similar to this one.</p>
+      </div>
+      <div class="rec-strip__nav d-none d-md-flex" aria-hidden="true">
+        <button class="icon-btn" type="button" data-scroll="-1" tabindex="-1"><i class="bi bi-chevron-left"></i></button>
+        <button class="icon-btn" type="button" data-scroll="1" tabindex="-1"><i class="bi bi-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="rec-track" data-rec-track aria-busy="true">
+      {% for _ in "123456" %}
+        <div class="rec-track__item"><div class="skeleton-card" aria-hidden="true">
+          <div class="skeleton skeleton-card__media"></div>
+          <div class="skeleton skeleton-card__line"></div>
+          <div class="skeleton skeleton-card__line skeleton-card__line--short"></div>
+        </div></div>
+      {% endfor %}
+    </div>
+  </section>
 </div>
 {% endblock %}
+
+{% block extra_js %}{% load static %}<script src="{% static 'js/recommendations.js' %}"></script>{% endblock %}
