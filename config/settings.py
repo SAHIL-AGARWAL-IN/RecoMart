@@ -134,7 +134,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Recommendation engine
 # ---------------------------------------------------------------------------
 RECOMMENDER = {
-    "MODEL_DIR": BASE_DIR / "recommender" / "models",
+    "ARTIFACTS_DIR": BASE_DIR / "recommender" / "artifacts",  # trained Joblib models
     "TOP_N": 8,                 # cards shown in a recommendation strip
     "CACHE_TOP_N": 20,          # similar items stored per product after training
     "K_MIN": 3,                 # K-Means: range of K values tried

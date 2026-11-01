@@ -14,7 +14,7 @@ db.sqlite3-journal
 .env
 
 # Trained ML models (regenerate with: python manage.py train_recommender)
-recommender/models/*.joblib
+recommender/artifacts/*.joblib
 
 # Tooling
 .coverage

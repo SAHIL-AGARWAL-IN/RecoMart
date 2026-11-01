@@ -21,7 +21,7 @@ RecoMart is a Django e-commerce store with an ML recommendation engine. It is a 
   - `api.py`: JSON endpoints
   - `seed/`: seed helpers
   - `management/commands/seed_data.py`
-- **`recommender/`:** all ML logic lives in `features.py` and `engine.py`, never in views. `services.py` holds the DB glue (A/B, events, FBT). `models/` holds the Joblib files (git-ignored). The training command is `management/commands/train_recommender.py`.
+- **`recommender/`:** all ML logic lives in `features.py` and `engine.py`, never in views. `services.py` holds the DB glue (A/B, events, FBT). `artifacts/` holds the trained Joblib files (git-ignored). The training command is `management/commands/train_recommender.py`.
 - **`dashboard/`:** admin analytics, CRUD and the ML Insights page.
 - **`templates/`** has `base.html`, `partials/` and one folder per app. **`static/`** has `css/theme.css`, `js/*.js` and `vendor/`.
 - **`docs/`:**

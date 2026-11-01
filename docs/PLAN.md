@@ -66,7 +66,7 @@ RecoMart/  (repo root = E:\Projects\Recommendation system)
 │   ├── services.py          DB glue: A/B variant, impressions/clicks, frequently-bought-together, popularity
 │   ├── models.py            RecommendationData, TrainingRun, RecommendationEvent
 │   ├── api.py  urls.py      /api/recommendations/...
-│   ├── models/              recomart_v{N}.joblib (git-ignored, .gitkeep)
+│   ├── artifacts/           recomart_v{N}.joblib (git-ignored, .gitkeep)
 │   └── management/commands/train_recommender.py
 ├── dashboard/               views.py (KPIs, CRUD CBVs, ML insights, retrain), forms.py, analytics.py (aggregates)
 ├── templates/
@@ -113,7 +113,7 @@ RecoMart/  (repo root = E:\Projects\Recommendation system)
    Each block gets a weight from `transformer_weights`, and every row is then L2-normalised so that the dot product equals cosine similarity. The vectors are also written to `Product.feature_vector`.
 3. **Choosing K:** KMeans (n_init=10, random_state=42) runs for k = 3…12. For each k it logs inertia (the elbow; the "knee" is found by maximum distance to the chord) and the silhouette score. K = best silhouette, and `--k` can override it.
 4. **Similarity:** the cosine matrix gives each product its top-20 within its own cluster. Free slots are filled from the nearest clusters by centroid distance. A product never recommends itself. The results are cached in the `RecommendationData` rows.
-5. **Persistence:** Joblib dumps `{version, pipeline, kmeans, product_ids, matrix, topN, pca_2d, metrics}` to `recommender/models/recomart_v{N}.joblib`. A `TrainingRun` row records the run.
+5. **Persistence:** Joblib dumps `{version, pipeline, kmeans, product_ids, matrix, topN, pca_2d, metrics}` to `recommender/artifacts/recomart_v{N}.joblib`. A `TrainingRun` row records the run.
 6. **Serving:** the newest model is loaded lazily once per process and kept as a cached singleton. Retraining resets it. Out-of-stock items are multiplied by a penalty and sink to the end. A product added after training falls back to same-category trending items until the next retrain, and the dashboard flags the model as stale.
 7. **Hybrid score:** `w_sim·similarity + w_pop·popularity + w_rec·recency`.
    - popularity = log-normalised, type-weighted interactions over 30 days
@@ -226,7 +226,7 @@ Tentative brand: a deep teal primary, a marigold/saffron accent for deals and ba
 - `python manage.py check`, `makemigrations --check --dry-run` and `python manage.py test` all pass. Failures get fixed before the phase stops, and I'll report the output exactly as it is.
 - Run the dev server and drive it with **Playwright MCP** at 375, 768 and 1280 px. Take screenshots, check the console for errors, critique the result and fix it.
 - Tests are written alongside the code. Cart, checkout and the recommender are written test-first.
-- **Recommender tests** run on a small deterministic fixture with a temporary `MODEL_DIR`. They check that:
+- **Recommender tests** run on a small deterministic fixture with a temporary `ARTIFACTS_DIR`. They check that:
   - no product recommends itself
   - the top match shares the category
   - out-of-stock items rank last
