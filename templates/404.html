@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found | RecoMart{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="error-page">
+    <p class="error-page__code" aria-hidden="true">404</p>
+    {% url 'store:product_list' as shop_url %}
+    {% include "partials/_empty_state.html" with icon="signpost-split" title="We couldn't find that page" text="The link may be old, or the product may no longer be in the store. Try searching, or head back to the shop." action_url=shop_url action_label="Browse products" %}
+    <form class="hero-search mx-auto mt-4" action="{% url 'store:product_list' %}" method="get" role="search">
+      <label for="notfound-search" class="visually-hidden">Search products</label>
+      <input id="notfound-search" class="form-control" type="search" name="q" placeholder="Search products…" autocomplete="off">
+      <button class="btn btn-search" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

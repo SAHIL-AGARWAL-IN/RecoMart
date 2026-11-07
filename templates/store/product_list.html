@@ -105,4 +105,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}{% load static %}<script src="{% static 'js/filters.js' %}"></script>{% endblock %}
+{% block extra_js %}{% load static store_tags %}<script src="{% asset 'js/filters.js' %}"></script>{% endblock %}

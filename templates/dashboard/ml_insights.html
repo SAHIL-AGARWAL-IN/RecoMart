@@ -1,5 +1,5 @@
 {% extends "dashboard/base_dashboard.html" %}
-{% load static humanize %}
+{% load static store_tags humanize %}
 
 {% block page_title %}ML Insights{% endblock %}
 {% block heading %}ML Insights{% endblock %}
@@ -128,6 +128,6 @@
 
 {% block extra_js %}
 <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
-<script src="{% static 'js/dashboard.js' %}"></script>
-<script src="{% static 'js/ml_insights.js' %}"></script>
+<script src="{% asset 'js/dashboard.js' %}"></script>
+<script src="{% asset 'js/ml_insights.js' %}"></script>
 {% endblock %}
