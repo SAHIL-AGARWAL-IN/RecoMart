@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static store_tags %}<!doctype html>
 <html lang="en-IN" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
@@ -6,14 +6,26 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="{% block meta_description %}RecoMart: an online store with recommendations that learn what you like.{% endblock %}">
   <title>{% block title %}RecoMart{% endblock %}</title>
+  <script>
+    /* Apply the saved theme before anything is drawn, so the page never flashes the wrong colours.
+       No saved choice yet? Follow the device's dark/light setting. */
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem("recomart-theme"); } catch (e) {}
+      if (theme !== "light" && theme !== "dark") {
+        theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-bs-theme", theme);
+    })();
+  </script>
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
   <link rel="preload" href="{% static 'vendor/fonts/inter-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{% static 'vendor/fonts/plus-jakarta-sans-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
-  <link rel="stylesheet" href="{% static 'css/shop.css' %}">
-  <link rel="stylesheet" href="{% static 'css/assistant.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/theme.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/shop.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/assistant.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}"
@@ -37,9 +49,9 @@
   {% block assistant %}{% include "partials/_assistant.html" %}{% endblock %}
 
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
-  <script src="{% static 'js/main.js' %}"></script>
-  <script src="{% static 'js/search.js' %}"></script>
-  {% block assistant_js %}<script src="{% static 'js/assistant.js' %}"></script>{% endblock %}
+  <script src="{% asset 'js/main.js' %}"></script>
+  <script src="{% asset 'js/search.js' %}"></script>
+  {% block assistant_js %}<script src="{% asset 'js/assistant.js' %}"></script>{% endblock %}
   {% block extra_js %}{% endblock %}
 </body>
 </html>

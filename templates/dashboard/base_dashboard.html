@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static store_tags %}
 
 {% block title %}{% block page_title %}Dashboard{% endblock %} | RecoMart admin{% endblock %}
 {% block body_class %}dash-body{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/dashboard.css' %}">{% endblock %}
 
 {% block navbar %}
 {% with section=request.resolver_match.url_name %}
@@ -29,6 +29,7 @@
     <a href="{% url 'dashboard:ml_insights' %}"{% if section == 'ml_insights' %} aria-current="page"{% endif %}><i class="bi bi-diagram-3" aria-hidden="true"></i>ML Insights</a>
   </nav>
   <div class="dash-sidebar__foot">
+    {% include "partials/_theme_toggle.html" with toggle_class="dash-theme-btn" label=True %}
     <a href="{% url 'store:home' %}"><i class="bi bi-shop" aria-hidden="true"></i>View store</a>
     <a href="{% url 'admin:index' %}"><i class="bi bi-database-gear" aria-hidden="true"></i>Django admin</a>
     <form method="post" action="{% url 'accounts:logout' %}">

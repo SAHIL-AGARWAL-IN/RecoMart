@@ -59,7 +59,7 @@ body:has(.assistant) .toast-stack { bottom: 5.25rem; }
   align-items: center;
   gap: 0.65rem;
   padding: 0.8rem 0.6rem 0.8rem 1rem;
-  background: var(--rm-teal-deep);
+  background: var(--rm-brand-surface);
   color: #fff;
 }
 .assistant__head > div { flex: 1; min-width: 0; }
@@ -118,7 +118,7 @@ body:has(.assistant) .toast-stack { bottom: 5.25rem; }
   text-decoration: none;
 }
 .mini-product:hover { border-color: var(--rm-teal); color: var(--rm-ink); }
-.mini-product img { width: 48px; height: 48px; object-fit: contain; padding: 3px; border-radius: 6px; background: #fff; }
+.mini-product img { width: 48px; height: 48px; object-fit: contain; padding: 3px; border-radius: 6px; background: var(--rm-image-well); }
 .mini-product__name { display: block; font-size: 0.85rem; font-weight: 600; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .mini-product__meta { display: block; font-size: 0.75rem; color: var(--rm-muted); }
 .mini-product__meta .bi { color: var(--rm-star); }

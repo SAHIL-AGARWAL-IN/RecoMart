@@ -20,6 +20,7 @@
       {% endif %}
 
       <nav class="header-actions" aria-label="Your shopping">
+        {% include "partials/_theme_toggle.html" %}
         <a class="icon-btn" href="{% url 'store:wishlist' %}" aria-label="Wishlist, {{ wishlist_count }} item{{ wishlist_count|pluralize }}">
           <i class="bi bi-heart" aria-hidden="true"></i>
           <span class="icon-btn__count" data-wishlist-count{% if not wishlist_count %} hidden{% endif %}>{{ wishlist_count }}</span>

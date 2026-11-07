@@ -101,7 +101,38 @@ document.addEventListener("click", async (event) => {
   }
 });
 
+// ---------- Dark / light theme ----------
+// The <head> script already applied the saved theme; this keeps the switch in sync and saves changes.
+function currentTheme() {
+  return document.documentElement.getAttribute("data-bs-theme") === "dark" ? "dark" : "light";
+}
+
+function syncThemeToggles() {
+  const dark = currentTheme() === "dark";
+  document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+    button.setAttribute("aria-pressed", dark ? "true" : "false");
+    button.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+    const label = button.querySelector("span");
+    if (label) label.textContent = dark ? "Light mode" : "Dark mode";
+  });
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(document.body).backgroundColor;
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute("data-bs-theme", theme);
+  try { localStorage.setItem("recomart-theme", theme); } catch { /* private mode: works for this page only */ }
+  syncThemeToggles();
+  window.dispatchEvent(new CustomEvent("rm:themechange", { detail: { theme } })); // charts redraw in new colours
+}
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-theme-toggle]")) setTheme(currentTheme() === "dark" ? "light" : "dark");
+});
+
 document.addEventListener("DOMContentLoaded", () => {
+  syncThemeToggles();
+
   // Django messages rendered by the server
   document.querySelectorAll(".toast[data-autoshow]").forEach((el) => {
     bootstrap.Toast.getOrCreateInstance(el, { delay: 4000 }).show();
