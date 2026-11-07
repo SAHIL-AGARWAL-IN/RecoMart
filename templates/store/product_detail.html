@@ -3,6 +3,7 @@
 
 {% block title %}{{ product.name }} | RecoMart{% endblock %}
 {% block meta_description %}{{ product.description|truncatechars:150 }}{% endblock %}
+{% block current_product %}{{ product.id }}{% endblock %}
 
 {% block content %}
 <div class="container pt-4">
