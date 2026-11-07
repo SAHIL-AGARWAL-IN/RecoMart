@@ -5,6 +5,7 @@ Secrets and environment-specific values come from the .env file (python-dotenv).
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,9 +16,22 @@ def env_bool(name, default=False):
     return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key-change-me")
+INSECURE_DEFAULT_KEY = "dev-only-insecure-key-change-me"
+SECRET_KEY = os.getenv("SECRET_KEY", INSECURE_DEFAULT_KEY)
 DEBUG = env_bool("DEBUG", True)
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+
+if not DEBUG and SECRET_KEY in {INSECURE_DEFAULT_KEY, "change-me-to-a-long-random-string"}:
+    raise ImproperlyConfigured("Set a real SECRET_KEY in .env before running with DEBUG=False.")
+
+# Production over HTTPS (set HTTPS=True in .env on the live server): secure cookies, redirect to
+# https:// and tell browsers to always use HTTPS (HSTS).
+if env_bool("HTTPS", False):
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv("HSTS_SECONDS", "3600"))
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # ---------------------------------------------------------------------------
