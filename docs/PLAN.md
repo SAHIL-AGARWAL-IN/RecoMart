@@ -9,7 +9,7 @@
 - [x] Phase 4: ML engine (features, training command, Joblib, recommendation API, "You may also like"), branch `phase-4-ml-engine` (done, merged into `main`)
 - [x] Phase 5: Enhancements (personalised feed, hybrid ranking, explanations, FBT, recently viewed), branch `phase-5-enhancements` (done, merged into `main`)
 - [x] Phase 6: Admin dashboard, ML Insights, A/B toggle, branch `phase-6-dashboard` (done, merged into `main`)
-- [x] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5), branch `phase-7-assistant` (done, waiting for the user's OK to merge)
+- [x] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5), branch `phase-7-assistant` (done, merged into `main`)
 - [ ] Phase 8: Polish (dark mode, responsiveness, tests, README)
 
 Each phase ends with:
