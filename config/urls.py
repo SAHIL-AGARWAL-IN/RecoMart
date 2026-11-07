@@ -12,6 +12,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("", include("recommender.urls")),
+    path("", include("assistant.urls")),
     path("", include("store.urls")),
 ]
 
