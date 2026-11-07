@@ -13,12 +13,14 @@
   <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/theme.css' %}">
   <link rel="stylesheet" href="{% static 'css/shop.css' %}">
+  <link rel="stylesheet" href="{% static 'css/assistant.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}"
       data-cart-add-url="{% url 'store:api_cart_add' %}"
       data-wishlist-url="{% url 'store:api_wishlist_toggle' 0 %}"
-      data-search-url="{% url 'store:api_search' %}">
+      data-search-url="{% url 'store:api_search' %}"
+      data-current-product="{% block current_product %}{% endblock %}">
   <a class="skip-link" href="#main">Skip to content</a>
 
   {% block navbar %}{% include "partials/_navbar.html" %}{% endblock %}
@@ -31,9 +33,13 @@
 
   {% include "partials/_toasts.html" %}
 
+  {# The shopping assistant chat. The admin dashboard empties this block. #}
+  {% block assistant %}{% include "partials/_assistant.html" %}{% endblock %}
+
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/search.js' %}"></script>
+  {% block assistant_js %}<script src="{% static 'js/assistant.js' %}"></script>{% endblock %}
   {% block extra_js %}{% endblock %}
 </body>
 </html>

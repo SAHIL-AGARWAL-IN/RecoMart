@@ -1,0 +1,31 @@
+{% load static %}
+{# Shopping assistant: a chat bubble that opens a small panel. Filled and driven by static/js/assistant.js. #}
+<div class="assistant" data-assistant data-url="{% url 'assistant:reply' %}"
+     data-greeting="{% if user.is_authenticated %}Hi {{ user.first_name|default:user.username }}! {% else %}Hi! {% endif %}I'm the RecoMart assistant. Ask me to find products, suggest similar ones, or check your cart and orders.">
+  <section class="assistant__panel" id="assistant-panel" role="dialog" aria-modal="false" aria-labelledby="assistant-title" hidden>
+    <header class="assistant__head">
+      <img src="{% static 'img/logo.svg' %}" alt="" width="34" height="34">
+      <div>
+        <h2 class="assistant__title" id="assistant-title">Shopping assistant</h2>
+        <p class="assistant__subtitle">Answers come from this store's catalog</p>
+      </div>
+      <button class="assistant__icon-btn" type="button" data-assistant-clear aria-label="Start a new chat" title="New chat">
+        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+      </button>
+      <button class="assistant__icon-btn" type="button" data-assistant-close aria-label="Close the assistant">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </header>
+    <div class="assistant__log" role="log" aria-live="polite" aria-label="Conversation" data-assistant-log></div>
+    <form class="assistant__form" data-assistant-form>
+      <label class="visually-hidden" for="assistant-input">Message</label>
+      <input class="assistant__input" id="assistant-input" type="text" maxlength="500" autocomplete="off"
+             placeholder="Ask about products, orders…" required>
+      <button class="assistant__send" type="submit" aria-label="Send message"><i class="bi bi-send-fill" aria-hidden="true"></i></button>
+    </form>
+  </section>
+  <button class="assistant__launcher" type="button" data-assistant-open aria-controls="assistant-panel" aria-expanded="false">
+    <i class="bi bi-chat-dots-fill" aria-hidden="true"></i>
+    <span class="assistant__launcher-label">Ask RecoMart</span>
+  </button>
+</div>
