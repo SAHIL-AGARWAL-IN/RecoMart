@@ -10,7 +10,7 @@
 - [x] Phase 5: Enhancements (personalised feed, hybrid ranking, explanations, FBT, recently viewed), branch `phase-5-enhancements` (done, merged into `main`)
 - [x] Phase 6: Admin dashboard, ML Insights, A/B toggle, branch `phase-6-dashboard` (done, merged into `main`)
 - [x] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5), branch `phase-7-assistant` (done, merged into `main`)
-- [ ] Phase 8: Polish (dark mode, responsiveness, tests, README)
+- [x] Phase 8: Polish (dark mode, responsiveness, tests, README), branch `phase-8-polish` (done, waiting for the user's OK to merge)
 
 Each phase ends with:
 - check, tests and Playwright screenshots all green
