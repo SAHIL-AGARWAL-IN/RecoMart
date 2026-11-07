@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "store.apps.StoreConfig",
     "recommender.apps.RecommenderConfig",
     "dashboard.apps.DashboardConfig",
+    "assistant.apps.AssistantConfig",
 ]
 
 MIDDLEWARE = [
