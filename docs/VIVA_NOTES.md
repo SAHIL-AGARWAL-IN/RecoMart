@@ -524,3 +524,63 @@ A:
 - Add more example phrases, or learn new ones from messages that hit the fallback.
 - Train a small classifier, such as logistic regression on the same TF-IDF features, instead of nearest example.
 - Or plug in a language model for free-form answers, keeping our search as its only source of facts.
+
+---
+
+## Phase 8: Polish (dark mode, accessibility, error pages, performance, README)
+
+### What we built
+- **Dark/light mode.**
+  - A sun/moon switch sits in the navbar and the admin sidebar, and the choice is saved in `localStorage`.
+  - A tiny script in `<head>` applies the saved theme *before* the page is drawn, so it never flashes white. With no saved choice, it follows the phone's or computer's setting.
+  - The colours were defined as CSS variables back in Phase 2, so dark mode only swaps their values. Charts redraw in the new colours.
+- **Versioned CSS/JS links.** A `{% asset %}` template tag adds the file's last-modified time to each link (`theme.css?v=…`). Browsers then always fetch the new file after a change; no more "press Ctrl+F5".
+- **Error pages.**
+  - A friendly **404** with a search box.
+  - A stand-alone **500** page that needs no database, logged-in user or context processors, because those might be what broke.
+- **Empty states** (empty cart, no results, no orders) get a small illustration in the brand's "connected dots" style.
+- **Accessibility and responsive audit.** A script opened every page as a guest, a customer and an admin, at 375, 768 and 1280 px, in both themes. It checked for sideways scrolling, images without alt text, form fields without labels, buttons without names, duplicate ids and the `<h1>` count. Everything passed after labelling the carousel arrows.
+- **Database performance.**
+  - We counted queries per page; the product list shows 20 cards with only 9 queries.
+  - Tests now check that list pages make the **same** number of queries for 3 items or 15, so an "N+1" bug can't slip in later.
+- **Production safety.**
+  - With `DEBUG=False` the app refuses to start using the placeholder secret key.
+  - `HTTPS=True` turns on secure cookies, the HTTPS redirect and HSTS.
+  - `python manage.py check --deploy` was used to check this.
+- **README:** Windows setup, demo logins, features, the ML pipeline, project structure, tests, troubleshooting and screenshots.
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| Theme set by an inline `<head>` script | External JS loads after the page starts drawing, which would flash the wrong colours ("FOUC"). |
+| Follow the device setting until the user chooses | Respects people who already chose dark mode for their whole phone. |
+| `mix-blend-mode: multiply` on product photos in dark mode | Photos have white backgrounds. Multiply turns that white into the soft image-well colour, so no bright boxes appear. |
+| 500 page doesn't extend `base.html` | Django renders it without the request. If the error came from the database, a page that queries categories would crash too. |
+| Query-count tests | Performance bugs are invisible with small demo data. A test that fails when queries grow with items catches them early. |
+
+### Likely viva questions
+**Q: How does dark mode work?**
+A:
+- All colours are CSS custom properties (`--rm-ink`, `--rm-surface`, …) with a light set and a dark set under `[data-bs-theme="dark"]`.
+- Switching sets `data-bs-theme` on `<html>`, and the browser recolours everything instantly.
+- The choice is saved in `localStorage`, and a small script in `<head>` re-applies it before the page appears.
+
+**Q: What is an N+1 query problem, and how did you avoid it?**
+A:
+- It's loading a list with 1 query, then making 1 more query *per item* (for its category, say). 20 products would cost 21 queries.
+- We use `select_related` (a JOIN for foreign keys) and `prefetch_related` (one extra query for many-to-many or reverse relations).
+- Tests check that the query count stays the same as the list grows.
+
+**Q: What would you change to put this online?**
+A:
+- In `.env`: `DEBUG=False`, a real `SECRET_KEY`, the domain in `ALLOWED_HOSTS`, and `HTTPS=True`.
+- Switch to PostgreSQL, run `collectstatic`, and serve with gunicorn or waitress behind nginx.
+- Replace the simulated payment with a real gateway such as Razorpay.
+
+**Q: How did you test accessibility?**
+A: A Playwright script visited every page at three screen sizes in both themes and checked for:
+- sideways scrolling
+- missing alt text and unlabelled form fields
+- nameless buttons, duplicate ids and the `<h1>` count
+
+Beyond the script, the site has a skip link, visible focus rings, `aria-live` toasts and chat, and a data table under every chart.
