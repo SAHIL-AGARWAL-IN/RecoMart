@@ -90,10 +90,16 @@ def search(text, request, filters=None):
         return reply("I couldn't find anything matching that. Try a wider price range or a different word.",
                      chips=["Show me deals", "Recommend something for me"],
                      link=_link("Browse all products", reverse("store:product_list")))
-    text = widened + _describe(filters, count)
-    return reply(text, products[:MAX_CARDS],
-                 chips=["Cheapest first", "Best rated"] if count > 1 else [],
+    # The assistant keeps no memory between messages, so follow-up chips carry the whole question:
+    # the button says "Cheapest first" but sends "phones under 20k cheapest first".
+    base = parser.SORT_PATTERN.sub("", text).strip(" ,.")
+    chips = [_chip("Cheapest first", f"{base} cheapest"), _chip("Best rated", f"{base} best rated")] if count > 1 else []
+    return reply(widened + _describe(filters, count), products[:MAX_CARDS], chips=chips,
                  link=_link(f"See all {count} results", _filters_url(filters)))
+
+
+def _chip(label, message):
+    return {"label": label, "message": message}
 
 
 # --------------------------------------------------------------------- similar items
@@ -151,8 +157,11 @@ def order_status(text, request):
                          link=_link("Your orders", reverse("store:order_list")))
         return reply("You haven't placed any orders yet.", chips=["Show me deals"])
     items = sum(item.quantity for item in order.items.all())
+    progress = {Order.Status.PLACED: "has been placed and is being packed",
+                Order.Status.SHIPPED: "has shipped and is on its way",
+                Order.Status.DELIVERED: "was delivered"}[order.status]
     text = (f"Order {order.order_number} ({items} item{'s' if items != 1 else ''}, {inr(order.total)}) "
-            f"is {order.get_status_display().lower()}. It was placed on {order.created_at:%d %b %Y}.")
+            f"{progress}. You ordered it on {order.created_at:%d %b %Y}.")
     return reply(text, link=_link("Track this order", order.get_absolute_url()))
 
 

@@ -27,6 +27,10 @@ SORT_WORDS = [  # checked in order; the first phrase found wins
     ("popular", ["popular", "best selling", "bestseller", "trending"]),
 ]
 
+# Matches any sort phrase, so a follow-up like "... best rated" can replace an earlier "... cheapest".
+SORT_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(p) for _, phrases in SORT_WORDS for p in phrases)
+                          + r")\w*\s*(?:first)?", re.IGNORECASE)
+
 # Everyday words -> category. Specific product words are also kept as a search keyword
 # (so "phones" narrows Electronics to phones); general words only set the category.
 GENERAL_WORDS = {

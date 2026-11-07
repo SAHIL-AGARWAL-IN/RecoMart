@@ -34,6 +34,15 @@ class SearchAndAnswerTests(AssistantApiTestCase):
         self.assertEqual([p["name"] for p in data["products"]], ["Budget Smartphone"])
         self.assertIn("/products/?", data["link"]["url"])
 
+    def test_follow_up_chips_carry_the_whole_question(self):
+        make_product("Value Smartphone", category=self.cheap_phone.category, price="12999",
+                     description="android smartphone")  # two results, so sort chips are offered
+        chips = self.ask("phones under 20000 cheapest").json()["chips"]
+        best = next(c for c in chips if c["label"] == "Best rated")
+        self.assertEqual(best["message"], "phones under 20000 best rated")  # old sort word replaced
+        data = self.ask(best["message"]).json()
+        self.assertEqual(data["intent"], "search")
+
     def test_similar_uses_the_recommender_fallback(self):
         data = self.ask("something like Budget Smartphone").json()
         self.assertEqual(data["intent"], "similar")
@@ -88,6 +97,17 @@ class PrivateDataTests(AssistantApiTestCase):
         self.assertEqual(data["intent"], "cart")
         self.assertIn("2 items", data["text"])
         self.assertIn("₹798", data["text"])
+
+
+class PlacementTests(AssistantApiTestCase):
+    def test_chat_is_on_shop_pages_but_not_in_the_admin_dashboard(self):
+        self.assertContains(self.client.get(reverse("store:home")), "data-assistant")
+        self.client.force_login(make_user("boss", role="admin"))
+        self.assertNotContains(self.client.get(reverse("dashboard:index")), "data-assistant")
+
+    def test_product_page_tells_the_chat_which_product_is_open(self):
+        response = self.client.get(self.novel.get_absolute_url())
+        self.assertContains(response, f'data-current-product="{self.novel.id}"')
 
 
 class GuardrailTests(AssistantApiTestCase):
