@@ -1,0 +1,6 @@
+{# Dark/light switch. main.js updates the label and the pressed state. #}
+<button class="{{ toggle_class|default:'icon-btn' }}" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to dark mode" title="Switch theme">
+  <i class="bi bi-moon-stars theme-icon--light" aria-hidden="true"></i>
+  <i class="bi bi-sun theme-icon--dark" aria-hidden="true"></i>
+  {% if label %}<span>Dark mode</span>{% endif %}
+</button>

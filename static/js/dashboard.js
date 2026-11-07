@@ -40,7 +40,15 @@
     return el ? JSON.parse(el.textContent) : null;
   }
 
+  // Charts read colours when drawn, so a theme switch destroys and redraws them.
+  function fresh(canvas) {
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+    return canvas;
+  }
+
   function line(canvas, labels, values, { money = false, highlightIndex = null } = {}) {
+    fresh(canvas);
     const t = theme();
     const radius = values.map((_, i) => (i === highlightIndex ? 6 : highlightIndex === null ? 0 : 3));
     return new Chart(canvas, {
@@ -55,6 +63,7 @@
   }
 
   function bar(canvas, labels, values, { money = false, percent = false, horizontal = false } = {}) {
+    fresh(canvas);
     const t = theme();
     const radius = horizontal ? { topRight: 4, bottomRight: 4 } : { topLeft: 4, topRight: 4 };
     return new Chart(canvas, {
@@ -68,6 +77,7 @@
 
   /* One cluster in colour, every other product in grey (small multiples, one per cluster). */
   function highlightScatter(canvas, points, cluster) {
+    fresh(canvas);
     const t = theme();
     const mine = points.filter((p) => p.c === cluster);
     const rest = points.filter((p) => p.c !== cluster);
@@ -96,7 +106,7 @@
   window.RMCharts = { line, bar, highlightScatter, dataFrom, rupees, number };
 
   // ---- Overview page ----
-  document.addEventListener("DOMContentLoaded", () => {
+  function drawOverview() {
     const daily = dataFrom("daily-data");
     if (daily) {
       const labels = daily.map((d) => new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }));
@@ -113,5 +123,7 @@
       bar(document.getElementById("category-chart"), categories.map((c) => c.category),
           categories.map((c) => Number(c.revenue)), { horizontal: true, money: true });
     }
-  });
+  }
+  document.addEventListener("DOMContentLoaded", drawOverview);
+  window.addEventListener("rm:themechange", drawOverview);
 })();

@@ -1,5 +1,5 @@
 /* ML Insights page: K-selection charts, cluster small multiples, CTR chart, Retrain button, A/B switch. */
-document.addEventListener("DOMContentLoaded", () => {
+function drawInsightCharts() {
   const { line, bar, highlightScatter, dataFrom } = window.RMCharts;
 
   // ---- Choosing K: inertia (elbow) and silhouette, chosen K highlighted ----
@@ -26,6 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
     bar(document.getElementById("ctr-chart"), ctr.map((row) => row.label), ctr.map((row) => row.ctr),
         { percent: true, horizontal: true });
   }
+
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  drawInsightCharts();
+  window.addEventListener("rm:themechange", drawInsightCharts);
 
   // ---- Retrain: POST, show a spinner, then reload to show the new model's charts ----
   const retrain = document.querySelector("[data-retrain]");

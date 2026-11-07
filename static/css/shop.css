@@ -133,7 +133,7 @@
 
 .mini-lines { list-style: none; margin: 0 0 1.25rem; padding: 0 0 1rem; border-bottom: 1px solid var(--rm-line); display: grid; gap: 0.75rem; }
 .mini-lines li { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; font-size: 0.925rem; font-variant-numeric: tabular-nums; }
-.mini-lines img { width: 48px; height: 48px; object-fit: contain; padding: 4px; border-radius: var(--rm-radius-sm); background: #fff; border: 1px solid var(--rm-line); }
+.mini-lines img { width: 48px; height: 48px; object-fit: contain; padding: 4px; border-radius: var(--rm-radius-sm); background: var(--rm-image-well); border: 1px solid var(--rm-line); }
 .mini-lines__name { overflow-wrap: anywhere; }
 
 /* ---------- Order success and detail ---------- */
@@ -226,7 +226,7 @@
   color: var(--rm-ink);
   text-decoration: none;
 }
-.search-result img { width: 44px; height: 44px; object-fit: contain; padding: 3px; border-radius: 6px; background: #fff; border: 1px solid var(--rm-line); }
+.search-result img { width: 44px; height: 44px; object-fit: contain; padding: 3px; border-radius: 6px; background: var(--rm-image-well); border: 1px solid var(--rm-line); }
 .search-result__text { min-width: 0; }
 .search-result__name { display: block; font-weight: 600; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-result__meta { display: block; font-size: 0.8rem; color: var(--rm-muted); }
