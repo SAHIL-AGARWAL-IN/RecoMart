@@ -1,6 +1,17 @@
 {# Usage: {% include "partials/_empty_state.html" with icon="search" title="..." text="..." action_url="..." action_label="..." %} #}
 <div class="empty-state">
-  <span class="empty-state__icon"><i class="bi bi-{{ icon|default:'inbox' }}" aria-hidden="true"></i></span>
+  {# A small illustration in the brand's "connected dots" style, with the icon in the middle. Decorative only. #}
+  <div class="empty-state__art" aria-hidden="true">
+    <svg viewBox="0 0 160 110" width="160" height="110" focusable="false">
+      <circle class="empty-art__halo" cx="80" cy="55" r="46"></circle>
+      <path class="empty-art__edge" d="M24 30 L58 44 M102 44 L138 24 M104 70 L134 92 M56 72 L28 88"></path>
+      <circle class="empty-art__dot" cx="24" cy="30" r="6"></circle>
+      <circle class="empty-art__dot" cx="138" cy="24" r="5"></circle>
+      <circle class="empty-art__dot" cx="28" cy="88" r="5"></circle>
+      <circle class="empty-art__accent" cx="134" cy="92" r="7"></circle>
+    </svg>
+    <span class="empty-state__icon"><i class="bi bi-{{ icon|default:'inbox' }}"></i></span>
+  </div>
   <h2 class="h4 mb-0">{{ title }}</h2>
   {% if text %}<p>{{ text }}</p>{% endif %}
   {% if action_url %}<a class="btn btn-primary mt-2" href="{{ action_url }}">{{ action_label }}</a>{% endif %}

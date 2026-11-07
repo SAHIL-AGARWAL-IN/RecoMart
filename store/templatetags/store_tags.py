@@ -1,9 +1,23 @@
-"""Template helpers: Indian rupee formatting, star ratings and query-string links."""
+"""Template helpers: Indian rupee formatting, star ratings, query-string links and versioned assets."""
+import os
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django import template
+from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 
 register = template.Library()
+
+
+@register.simple_tag
+def asset(path):
+    """Like {% static %}, plus ?v=<last modified time>, so browsers never use an old cached copy.
+
+    When theme.css changes, its URL changes too, and every browser downloads the new file.
+    """
+    url = static(path)
+    found = finders.find(path)
+    return f"{url}?v={int(os.path.getmtime(found))}" if found else url
 
 
 def indian_grouping(digits):

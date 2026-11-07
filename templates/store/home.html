@@ -121,4 +121,4 @@
 {% endif %}
 {% endblock %}
 
-{% block extra_js %}{% load static %}<script src="{% static 'js/recommendations.js' %}"></script>{% endblock %}
+{% block extra_js %}{% load static store_tags %}<script src="{% asset 'js/recommendations.js' %}"></script>{% endblock %}

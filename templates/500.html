@@ -1,0 +1,28 @@
+{% load static %}<!doctype html>
+{# Stand-alone on purpose: when the server has an error we can't rely on the database, the logged-in
+   user or context processors, so this page uses only static files. #}
+<html lang="en-IN" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Something went wrong | RecoMart</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+</head>
+<body>
+  <main class="container py-5">
+    <div class="error-page">
+      <a class="brand justify-content-center mb-4" href="/"><img src="{% static 'img/logo.svg' %}" alt="" width="34" height="34">RecoMart</a>
+      <p class="error-page__code" aria-hidden="true">500</p>
+      <div class="empty-state">
+        <span class="empty-state__icon position-static" style="transform: none;"><i class="bi bi-tools" aria-hidden="true"></i></span>
+        <h1 class="h4 mb-0">Something went wrong on our side</h1>
+        <p>It's not you. Please try again in a moment. If it keeps happening, the error has been logged for the team.</p>
+        <a class="btn btn-primary mt-2" href="/">Back to the shop</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
