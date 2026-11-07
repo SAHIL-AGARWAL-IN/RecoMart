@@ -449,3 +449,78 @@ A:
 4. The page reloads with the new metrics.
 
 The next recommendation request uses the new version.
+
+---
+
+## Phase 7: Shopping assistant chatbot (offline)
+
+### What we built
+- **An "Ask RecoMart" chat button** on every shop page (not in the admin dashboard). It opens a small panel on desktop and a full-screen chat on phones.
+- **It answers from the store's own data, with no internet or AI service:**
+  - **Product search with filters:** "phones under 20k", "4 star books under 500", "cheapest shoes", "best rated perfume".
+  - **Similar items:** "something like Atomic Habits", or "similar to this" on a product page. Uses our recommender.
+  - **Personal picks:** "recommend something for me". Uses the "Recommended for you" feed.
+  - **Today's deals.**
+  - **Your latest order or a specific one** ("RM-000123"). Logged-in users only, and only their own orders.
+  - **Your cart:** item count, total, and how much more you need for free delivery.
+  - **FAQs:** delivery, payment, returns, and what RecoMart is.
+  - **Greetings, thanks and help,** plus a polite fallback.
+- **Every answer** is short text plus product rows, a link ("See all 12 results") and quick-reply chips.
+- **The conversation survives page changes** (sessionStorage), and the reset button starts a new chat.
+
+### How it understands a message
+1. **Rules first, with regular expressions (`assistant/parser.py`):**
+   - **Prices:** "under 20k", "below ₹2,500", "between 40000 and 60000".
+   - **Ratings and sort words:** "4 star", "cheapest", "best rated".
+   - **Order numbers** like RM-000123, and "like X".
+   - **Product words map to categories:** "phones" → Electronics, "novel" → Books.
+2. **Otherwise, nearest example phrase (`assistant/intents.py`).** Each intent has 6–12 example phrases.
+   - The message and the examples become **TF-IDF vectors of character n-grams** (2–4 letters), and the intent of the most similar example by **cosine similarity** wins.
+   - Character n-grams make typos like "wher is my ordr" still match.
+   - If the best similarity is below 0.35, the answer is the **fallback**.
+3. **The responder (`assistant/responder.py`) calls the store's existing services:**
+   - `filter_products` for search
+   - `similar_products` and `recommended_for` from the recommender
+   - the cart service, and orders filtered by the logged-in user
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| Rules + TF-IDF nearest example instead of an AI API | It works offline, is free and fast, and every answer can be explained, just like the rest of the project. An AI model would need internet and an API key, and could make up products. |
+| Reuse the store's own search and recommender | The chatbot can only show what the website itself would show. There's one search to maintain, not two. |
+| Character n-grams, not words | Small spelling mistakes still share most 3-letter pieces with the correct word. |
+| A synonym list at search time ("earbuds" → "airpod", "perfume" → "eau de") | Shoppers and catalogs use different words for the same thing. |
+| Honest widening | If "gaming chair" isn't sold, it says so, instead of quietly showing unrelated products. |
+| No memory between messages | Simpler and safer. Follow-up chips carry the full question: the button says "Best rated" but sends "phones under 20k best rated". |
+| Orders filtered by `user=request.user` | Typing someone else's order number can never reveal their details. A test checks this. |
+| 20 messages per minute per visitor, 500-character limit | Stops a script from flooding the server. |
+| Answers drawn with `textContent`, not `innerHTML` | Nothing typed by a user or stored in the database can inject HTML or scripts (XSS). |
+
+### Likely viva questions
+**Q: Is this an AI chatbot like ChatGPT?**
+A: No. It's a **retrieval-based** chatbot: it works out the *intent* of the message, then looks up real data. It can't write free-form answers, but it never invents products or prices, and it works offline.
+
+**Q: How does it decide what the user wants?**
+A:
+1. Rules (regular expressions) catch clear patterns: order numbers, "like X", prices and ratings.
+2. Otherwise, TF-IDF turns the message and about 100 example phrases into vectors, and the intent of the most similar example by cosine similarity wins.
+3. If even the best match scores below 0.35, it says it didn't understand and offers suggestions.
+
+**Q: Why character n-grams?**
+A: "order" and "ordr" share the pieces "or" and "rd", while the whole words don't match at all. So typos still work.
+
+**Q: How do you stop it showing someone else's order?**
+A: The order lookup always starts from `Order.objects.filter(user=request.user)`. Guests are asked to log in. A test types another user's order number and checks that nothing is shown.
+
+**Q: How is it protected?**
+A:
+- It accepts POST only, protected by Django's CSRF check like every form.
+- Messages are limited to 500 characters.
+- There's a rate limit of 20 messages per minute per session, kept in Django's cache.
+- Replies are drawn with `textContent`, never `innerHTML`, so there's no XSS.
+
+**Q: How would you make it smarter?**
+A:
+- Add more example phrases, or learn new ones from messages that hit the fallback.
+- Train a small classifier, such as logistic regression on the same TF-IDF features, instead of nearest example.
+- Or plug in a language model for free-form answers, keeping our search as its only source of facts.
