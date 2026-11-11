@@ -37,10 +37,7 @@
 
   {% if demo_mode and not user.is_authenticated and request.resolver_match.view_name != "accounts:login" %}
     <div class="demo-strip">
-      <p class="container">
-        <span>A portfolio project. Shoppers, orders and payments are simulated.</span>
-        <a href="{% url 'accounts:login' %}">Try a demo account</a>
-      </p>
+      <p class="container">A portfolio project. Shoppers, orders and payments are simulated.<a href="{% url 'accounts:login' %}">Try a demo account</a></p>
     </div>
   {% endif %}
 

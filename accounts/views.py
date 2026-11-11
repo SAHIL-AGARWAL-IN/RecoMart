@@ -30,7 +30,8 @@ def demo_login(request):
     if user is None:
         raise Http404("Demo logins are not available.")
     login(request, user)
-    messages.success(request, f"You're using {user.first_name}'s shared demo account. Look around as much as you like.")
+    who = "the store admin" if user.is_store_admin else user.first_name
+    messages.success(request, f"You're logged in as {who}, a shared demo account. Look around as much as you like.")
     return redirect("dashboard:index" if user.is_store_admin else "store:home")
 
 
