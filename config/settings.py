@@ -36,6 +36,8 @@ DEMO_MODE = env_bool("DEMO_MODE", False)
 if env_bool("HTTPS", False):
     # Set SSL_REDIRECT=False when the host already redirects (PythonAnywhere's "Force HTTPS").
     SECURE_SSL_REDIRECT = env_bool("SSL_REDIRECT", True)
+    if not SECURE_SSL_REDIRECT:
+        SILENCED_SYSTEM_CHECKS = ["security.W008"]  # "no SSL redirect": the host does it for us
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.getenv("HSTS_SECONDS", "3600"))
