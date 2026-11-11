@@ -747,6 +747,54 @@ main { min-height: 60vh; }
   .auth-shell__aside { display: none; }
 }
 
+/* ---------- Public demo (DEMO_MODE): guest strip and one-click demo accounts ---------- */
+.demo-strip { background: var(--rm-brand-surface); color: var(--rm-on-brand); font-size: 0.85rem; }
+.demo-strip p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; margin: 0 auto; padding-block: 0.45rem; }
+.demo-strip a { color: var(--rm-marigold); font-weight: 600; text-underline-offset: 3px; }
+.demo-strip a:hover { color: #fff; }
+.demo-strip a:focus-visible { outline: 2px solid var(--rm-marigold); outline-offset: 2px; border-radius: 2px; }
+
+.demo-pass { margin-bottom: 1.25rem; }
+.demo-pass__title { font-size: 1.05rem; margin-bottom: 0.2rem; }
+.demo-pass__lead { color: var(--rm-muted); font-size: 0.925rem; margin-bottom: 0.85rem; }
+.demo-pass__choices { display: grid; gap: 0.6rem; }
+.demo-choice {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  color: var(--rm-ink);
+  background: var(--rm-surface);
+  border: 1.5px solid var(--rm-line-strong);
+  border-radius: var(--rm-radius);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.demo-choice:hover { border-color: var(--rm-teal); background: var(--rm-teal-mist); }
+.demo-choice:focus-visible { outline: 3px solid rgba(var(--rm-teal-rgb), 0.55); outline-offset: 2px; }
+.demo-choice__badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--rm-brand-surface);
+  color: #fff;
+  font-family: var(--rm-font-display);
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.demo-choice--admin .demo-choice__badge { border-radius: var(--rm-radius-sm); background: var(--rm-marigold); color: var(--rm-on-marigold); }
+.demo-choice__text { display: grid; gap: 0.1rem; }
+.demo-choice__text strong { font-family: var(--rm-font-display); font-weight: 700; }
+.demo-choice__text span { font-size: 0.85rem; color: var(--rm-muted); }
+.demo-pass__creds { margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--rm-muted); }
+.demo-pass__creds code { padding: 0.05rem 0.3rem; border-radius: 4px; background: var(--rm-paper); color: var(--rm-ink); font-size: 0.9em; }
+.auth-divider { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 1.25rem; color: var(--rm-muted); font-size: 0.85rem; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--rm-line); }
+
 /* ---------- Empty states, alerts, toasts ---------- */
 .empty-state {
   display: grid;

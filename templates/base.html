@@ -35,6 +35,15 @@
       data-current-product="{% block current_product %}{% endblock %}">
   <a class="skip-link" href="#main">Skip to content</a>
 
+  {% if demo_mode and not user.is_authenticated and request.resolver_match.view_name != "accounts:login" %}
+    <div class="demo-strip">
+      <p class="container">
+        <span>A portfolio project. Shoppers, orders and payments are simulated.</span>
+        <a href="{% url 'accounts:login' %}">Try a demo account</a>
+      </p>
+    </div>
+  {% endif %}
+
   {% block navbar %}{% include "partials/_navbar.html" %}{% endblock %}
 
   <main id="main" tabindex="-1">

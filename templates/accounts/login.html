@@ -10,6 +10,35 @@
       <h1>Log in</h1>
       <p class="text-muted mb-4">New to RecoMart? <a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Create an account</a></p>
 
+      {% if demo_mode %}
+        <section class="demo-pass" aria-labelledby="demo-pass-title">
+          <h2 class="demo-pass__title" id="demo-pass-title">Just looking around?</h2>
+          <p class="demo-pass__lead">Open a shared demo account in one click. No sign-up needed.</p>
+          <form class="demo-pass__choices" method="post" action="{% url 'accounts:demo_login' %}">
+            {% csrf_token %}
+            <button class="demo-choice" type="submit" name="account" value="customer">
+              <span class="demo-choice__badge" aria-hidden="true">P</span>
+              <span class="demo-choice__text">
+                <strong>Shop as Priya</strong>
+                <span>A regular customer, so “Recommended for you” is already filled in</span>
+              </span>
+            </button>
+            <button class="demo-choice demo-choice--admin" type="submit" name="account" value="admin">
+              <span class="demo-choice__badge" aria-hidden="true"><i class="bi bi-speedometer2"></i></span>
+              <span class="demo-choice__text">
+                <strong>Open the admin dashboard</strong>
+                <span>Sales charts and ML Insights, read-only</span>
+              </span>
+            </button>
+          </form>
+          <p class="demo-pass__creds">
+            Prefer typing? Use <code>{{ demo_accounts.customer.username }}</code> / <code>{{ demo_accounts.customer.password }}</code>
+            or <code>{{ demo_accounts.admin.username }}</code> / <code>{{ demo_accounts.admin.password }}</code>.
+          </p>
+        </section>
+        <p class="auth-divider">or log in with your own account</p>
+      {% endif %}
+
       <form method="post" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">

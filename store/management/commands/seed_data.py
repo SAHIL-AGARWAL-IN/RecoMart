@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from faker import Faker
 
+from accounts.demo import DEMO_ADMIN, DEMO_CUSTOMER
 from recommender.models import RecommendationData, RecommendationEvent, TrainingRun
 from store.models import (Cart, Category, Interaction, Order, Product, ProductImage, Review, WishlistItem)
 from store.seed import images
@@ -24,10 +25,8 @@ from store.seed.shoppers import ShopperSimulator
 
 User = get_user_model()
 
-DEMO_ADMIN = {"username": "admin", "password": "Admin@123", "first_name": "Store", "last_name": "Admin"}
-DEMO_CUSTOMER = {"username": "priya", "password": "Customer@123", "first_name": "Priya", "last_name": "Sharma",
-                 "preferred": ["electronics", "books"]}
-CUSTOMER_PASSWORD = "Customer@123"
+PRIYA_PREFERRED = ["electronics", "books"]  # gives the demo customer a clear taste for "Recommended for you"
+CUSTOMER_PASSWORD = DEMO_CUSTOMER["password"]  # every simulated customer shares it
 MAX_GALLERY_IMAGES = 3
 # About 15% of products get a big sale (25-50% off) so "Today's deals" stands out.
 BIG_SALE_SHARE = 0.15
@@ -72,7 +71,7 @@ class Command(BaseCommand):
             sim = ShopperSimulator(rng, fake, products, base_ratings)
 
             priya = next(u for u in customers if u.username == DEMO_CUSTOMER["username"])
-            sim.simulate_customer(priya, DEMO_CUSTOMER["preferred"], sessions=16)
+            sim.simulate_customer(priya, PRIYA_PREFERRED, sessions=16)
             for user in customers:
                 if user is not priya:
                     preferred = rng.sample(sim.category_slugs, 2)

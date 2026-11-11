@@ -7,6 +7,7 @@ app_name = "accounts"
 
 urlpatterns = [
     path("login/", views.RecoMartLoginView.as_view(), name="login"),
+    path("demo-login/", views.demo_login, name="demo_login"),  # POST only, DEMO_MODE only
     path("logout/", LogoutView.as_view(), name="logout"),  # POST only, protected by CSRF
     path("register/", views.register, name="register"),
     path("profile/", views.profile, name="profile"),

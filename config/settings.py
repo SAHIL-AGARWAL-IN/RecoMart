@@ -69,6 +69,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "accounts.middleware.DemoReadOnlyMiddleware",  # does nothing unless DEMO_MODE=True
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -84,6 +85,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "store.context_processors.store_nav",
+                "accounts.context_processors.demo",
             ],
         },
     },

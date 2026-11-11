@@ -1,10 +1,14 @@
+from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
+from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
+from .demo import DEMO_ACCOUNTS
 from .forms import LoginForm, ProfileForm, RegisterForm
 
 
@@ -16,6 +20,18 @@ class RecoMartLoginView(LoginView):
     def form_valid(self, form):
         messages.success(self.request, f"Welcome back, {form.get_user().first_name or form.get_user().username}.")
         return super().form_valid(form)
+
+
+@require_POST
+def demo_login(request):
+    """Public demo only: log in as a shared demo account with one click, no typing."""
+    account = DEMO_ACCOUNTS.get(request.POST.get("account")) if settings.DEMO_MODE else None
+    user = get_user_model().objects.filter(username=account["username"]).first() if account else None
+    if user is None:
+        raise Http404("Demo logins are not available.")
+    login(request, user)
+    messages.success(request, f"You're using {user.first_name}'s shared demo account. Look around as much as you like.")
+    return redirect("dashboard:index" if user.is_store_admin else "store:home")
 
 
 def register(request):

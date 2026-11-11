@@ -21,8 +21,12 @@
     <div class="col-lg-8">
       <div class="buy-box">
         <h2 class="h5 mb-3">Personal details</h2>
+        {% if shared_demo_account %}
+          <p class="demo-note"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>This is a shared demo account, so its details can't be changed. <a href="{% url 'accounts:register' %}">Create your own account</a> to try it.</p>
+        {% endif %}
         <form method="post" novalidate>
           {% csrf_token %}
+          <fieldset{% if shared_demo_account %} disabled{% endif %}>
           <div class="row gx-3">
             <div class="col-sm-6">{% include "partials/_field.html" with field=form.first_name %}</div>
             <div class="col-sm-6">{% include "partials/_field.html" with field=form.last_name %}</div>
@@ -30,6 +34,7 @@
             <div class="col-sm-6">{% include "partials/_field.html" with field=form.phone %}</div>
           </div>
           <button class="btn btn-primary" type="submit">Save profile</button>
+          </fieldset>
         </form>
       </div>
     </div>
