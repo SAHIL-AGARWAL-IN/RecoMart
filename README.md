@@ -142,14 +142,14 @@ The answer then comes from the store's own search, recommender, cart and orders.
 
 ```
 config/        settings (reads .env), root URLs
-accounts/      custom User with a role (customer/admin), login/register, access decorators
+accounts/      custom User with a role (customer/admin), login/register, access decorators, demo mode
 store/         catalog, cart, checkout, orders, reviews, wishlist, JSON APIs, seed_data command
 recommender/   features.py, engine.py (ML), explain.py, services.py, API, train_recommender command
 assistant/     offline chatbot: parser.py, intents.py, responder.py, api.py
 dashboard/     admin overview, CRUD, inventory, ML Insights, A/B switch
 templates/     base.html + partials + one folder per app
 static/        css/ (theme tokens), js/, vendor/ (Bootstrap, icons, Chart.js, fonts)
-docs/          PLAN.md, VIVA_NOTES.md, screenshots/
+docs/          PLAN.md, VIVA_NOTES.md, DEPLOY.md (putting it online), screenshots/
 ```
 
 ---
@@ -174,15 +174,24 @@ The 190+ tests cover:
 
 ---
 
-## Going live (not needed for the demo)
+## Putting it online
 
-Set these in `.env` on the server:
+The project runs as a public demo on PythonAnywhere's free plan. **[`docs/DEPLOY.md`](docs/DEPLOY.md)** has every
+step, from zipping the photos to clicking Reload.
+
+`DEMO_MODE=True` in `.env` makes it safe to share:
+- the login page gets one-click demo accounts (Priya the customer, and the admin dashboard)
+- those shared accounts can look at everything and retrain the model, but they can't save changes or open Django's `/admin/`
+- visitors can still register their own account
+
+For any other server, set these in `.env`:
 - `DEBUG=False`
 - a real `SECRET_KEY`. The app refuses to start without one.
-- `ALLOWED_HOSTS=yourdomain.com`
+- `ALLOWED_HOSTS=yourdomain.com` and `CSRF_TRUSTED_ORIGINS=https://yourdomain.com`
 - `HTTPS=True`, which turns on secure cookies, the HTTPS redirect and HSTS
 
-Use PostgreSQL (`DB_ENGINE=postgres`, then `pip install "psycopg[binary]"`), run `python manage.py collectstatic`, and serve with a production server such as gunicorn or waitress behind nginx.
+Then run `python manage.py collectstatic` and serve the app with gunicorn or waitress behind nginx. PostgreSQL is
+supported: set `DB_ENGINE=postgres` and run `pip install "psycopg[binary]"`.
 
 ---
 

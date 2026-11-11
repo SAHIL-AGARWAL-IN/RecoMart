@@ -584,3 +584,58 @@ A: A Playwright script visited every page at three screen sizes in both themes a
 - nameless buttons, duplicate ids and the `<h1>` count
 
 Beyond the script, the site has a skip link, visible focus rings, `aria-live` toasts and chat, and a data table under every chart.
+
+---
+
+## Phase 9: Online demo for recruiters
+
+### What was built
+- **A public demo on PythonAnywhere's free plan.** `docs/DEPLOY.md` walks through every step: clone, virtualenv, `.env`, seed, train, `collectstatic`, the WSGI file, static and media mappings, and Force HTTPS.
+- **New settings, all read from `.env`:**
+  - `CSRF_TRUSTED_ORIGINS`
+  - `SSL_REDIRECT`, so the host can do the HTTPS redirect instead
+  - `DEMO_MODE`
+  - a `LOGGING` config that prints server errors to the host's error log when `DEBUG=False`
+- **Demo mode** (`DEMO_MODE=True`):
+  - **One-click demo logins on the login page:** "Shop as Priya" and "Open the admin dashboard". They post to `accounts:demo_login`, which only works in demo mode.
+  - **`DemoReadOnlyMiddleware`** (`accounts/middleware.py`) keeps the shared demo accounts read-only. It blocks their POSTs in the dashboard (except **Retrain**) and on the profile page, and closes Django's `/admin/` to them. Blocked requests go back to the previous page with a friendly message.
+  - **A slim banner for guests** says the shoppers, orders and payments are simulated, and links to the demo logins.
+  - **The dashboard shows a "Read-only demo" notice**, and the profile form is disabled for the shared accounts.
+- The demo account details now live in one place, `accounts/demo.py`. Both `seed_data` and the login page read them from there.
+
+### Key design decisions
+| Decision | Why |
+|---|---|
+| PythonAnywhere free plan | It is always on, so a recruiter never waits 50 seconds for a sleeping server. Its disk is persistent, so SQLite, photos and the model survive restarts. It needs no card. Render's free plan sleeps and wipes its disk. |
+| Upload `media/` once and seed with `--offline` | Free accounts can only reach allowlisted sites, and DummyJSON isn't on the list. The catalog JSON is already in git, so only the photos need uploading. |
+| One middleware for every demo rule | All of "what a shared account may not do" sits in one short file instead of being scattered over 10 views, so it is easy to read and easy to test. |
+| Block the shared accounts, not every admin | The owner's own superuser still has full control. Visitors who register get a normal account. |
+| Keep Retrain allowed | It is the most interesting button on ML Insights, it changes nothing a visitor typed in, and each model file is only about 57 KB. |
+| `SSL_REDIRECT=False` on PythonAnywhere | The host already redirects to HTTPS. If Django also redirects but can't tell the request was HTTPS, the browser loops forever. |
+| `CSRF_TRUSTED_ORIGINS` | Behind a proxy, Django may see `http://` while the browser sends `Origin: https://…`. Listing the real origin lets form submissions through. |
+| Print errors to the log | With `DEBUG=False`, Django only emails errors to `ADMINS`. Without a logging config, a 500 error would leave no trace on the server. |
+
+### Likely viva questions
+**Q: What is middleware in Django?**
+A:
+- It is code that runs on every request, before and after the view.
+- Django's own middleware handles sessions, CSRF and login.
+- Ours has a `process_view` hook that runs after the URL is matched and before the view. It checks whether this is a shared demo account doing a POST in the dashboard. If it is, it returns a redirect, so the view never runs.
+
+**Q: Why not just hide the Save buttons for the demo admin?**
+A: Hiding a button is not security. Anyone can send the POST request with a tool like curl. The middleware blocks the request on the server, so it works however the request is sent. (We still disable the profile form so the page is honest about it.)
+
+**Q: Isn't it dangerous to publish the admin password?**
+A: Only the *shared demo* admin's password is public, and in demo mode that account can't save anything or open `/admin/`. The real owner account is a separate superuser whose password is never shared.
+
+**Q: How do you update the live site?**
+A: Push to GitHub. Then, in a PythonAnywhere console, run `git pull`, `migrate` and `collectstatic`, and click Reload. The database, photos and model stay on the server's disk.
+
+**Q: What is `collectstatic` and why is it needed?**
+A:
+- With `DEBUG=False` Django stops serving CSS and JS itself, because a fast web server should do it.
+- `collectstatic` copies every app's static files into one folder, `staticfiles/`.
+- PythonAnywhere's static mapping then serves that folder directly at `/static/`. `/media/` is mapped the same way for product photos.
+
+**Q: What is HSTS?**
+A: It is a response header telling the browser "only ever use HTTPS for this site". Even if someone types `http://`, the browser switches to HTTPS without asking the server first.

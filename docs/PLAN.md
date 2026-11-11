@@ -11,7 +11,7 @@
 - [x] Phase 6: Admin dashboard, ML Insights, A/B toggle, branch `phase-6-dashboard` (done, merged into `main`)
 - [x] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5), branch `phase-7-assistant` (done, merged into `main`)
 - [x] Phase 8: Polish (dark mode, responsiveness, tests, README), branch `phase-8-polish` (done, merged into `main`)
-- [ ] Phase 9: Online demo for recruiters on PythonAnywhere (added by the user after Phase 8), branch `phase-9-deploy`
+- [ ] Phase 9: Online demo for recruiters on PythonAnywhere (added by the user after Phase 8), branch `phase-9-deploy` (code and `docs/DEPLOY.md` done; next: user tests, merge, then deploy on their account and add the live link to the README)
 
 Each phase ends with:
 - check, tests and Playwright screenshots all green
@@ -253,7 +253,7 @@ Tentative brand: a deep teal primary, a marigold/saffron accent for deals and ba
 - **Demo mode ("look, don't break", chosen by the user):**
   - One-click "try the demo" logins on the login page, and a slim banner for guests.
   - The shared demo accounts can browse everything, but `DemoReadOnlyMiddleware` blocks their POSTs to the dashboard and to their profile. Retraining the model is still allowed. The dashboard says it is read-only.
-  - In demo mode `seed_data` makes the demo admin a store admin who is not a superuser, so `/admin/` stays closed. The owner creates a private superuser.
+  - The middleware also closes Django's `/admin/` to the shared accounts, however they were seeded. `seed_data` is unchanged, and the owner creates a private superuser.
 - **Docs:** `docs/DEPLOY.md` with step-by-step PythonAnywhere setup, updating and resetting. The README gets a "Live demo" section.
 - **Tests:** demo login, the read-only guard (blocked, allowed and switched off), the seeded admin's permissions, and the login page panel.
 

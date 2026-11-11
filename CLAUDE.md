@@ -14,7 +14,7 @@ RecoMart is a Django e-commerce store with an ML recommendation engine. It is a 
 
 ## Layout
 - **`config/`:** settings and the root urls.
-- **`accounts/`:** custom `User` with a `role` field (customer/admin), auth views, `admin_required` / `StoreAdminRequiredMixin`.
+- **`accounts/`:** custom `User` with a `role` field (customer/admin), auth views, `admin_required` / `StoreAdminRequiredMixin`. `demo.py` holds the shared demo accounts. `middleware.py` (`DemoReadOnlyMiddleware`) keeps them read-only when `DEMO_MODE=True`, which is the public demo.
 - **`store/`:** catalog, cart, orders, reviews and wishlist. The pieces:
   - `cart.py`: cart service
   - `services.py`: checkout and interaction logging
@@ -27,6 +27,7 @@ RecoMart is a Django e-commerce store with an ML recommendation engine. It is a 
 - **`templates/`** has `base.html`, `partials/` and one folder per app. **`static/`** has `css/theme.css`, `js/*.js` and `vendor/`.
 - **`docs/`:**
   - `PLAN.md`
+  - `DEPLOY.md`: step-by-step PythonAnywhere setup for the public demo
   - `VIVA_NOTES.md`: append one section per phase covering what was built, the key decisions, and likely viva Q&A in simple language
   - `screenshots/`
 
