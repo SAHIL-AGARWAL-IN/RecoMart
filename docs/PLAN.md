@@ -11,6 +11,7 @@
 - [x] Phase 6: Admin dashboard, ML Insights, A/B toggle, branch `phase-6-dashboard` (done, merged into `main`)
 - [x] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5), branch `phase-7-assistant` (done, merged into `main`)
 - [x] Phase 8: Polish (dark mode, responsiveness, tests, README), branch `phase-8-polish` (done, merged into `main`)
+- [ ] Phase 9: Online demo for recruiters on PythonAnywhere (added by the user after Phase 8), branch `phase-9-deploy`
 
 Each phase ends with:
 - check, tests and Playwright screenshots all green
@@ -237,6 +238,24 @@ Tentative brand: a deep teal primary, a marigold/saffron accent for deals and ba
 - Query tuning (`select_related`/`prefetch_related`).
 - Full test run and a code review.
 - `README.md`: Windows setup, seeding, training, demo logins, screenshots, and a viva-ready explanation of the ML pipeline.
+
+**Phase 9: Online demo for recruiters** (added by the user after Phase 8)
+- **Host: PythonAnywhere Beginner (free).** The user chose it. It is always on with no cold start, needs no card, and keeps SQLite, `media/` and the Joblib model on a persistent disk. It runs 1 web worker, which suits our per-process caches. Limits to design around:
+  - 512 MB of disk, so install with `pip --no-cache-dir`
+  - outbound internet is an allowlist: PyPI and GitHub are on it, `dummyjson.com` is not, so `media/` (16 MB) is uploaded once and seeding runs with `--offline`
+  - no scheduled tasks on new free accounts, so the demo is reset by hand
+  - the web app must be extended once a month from the Web tab
+- **Settings:**
+  - `CSRF_TRUSTED_ORIGINS` from `.env`
+  - `SSL_REDIRECT` (PythonAnywhere's "Force HTTPS" toggle does the redirect)
+  - `LOGGING`, so tracebacks reach the host's error log when `DEBUG=False`
+  - `DEMO_MODE`
+- **Demo mode ("look, don't break", chosen by the user):**
+  - One-click "try the demo" logins on the login page, and a slim banner for guests.
+  - The shared demo accounts can browse everything, but `DemoReadOnlyMiddleware` blocks their POSTs to the dashboard and to their profile. Retraining the model is still allowed. The dashboard says it is read-only.
+  - In demo mode `seed_data` makes the demo admin a store admin who is not a superuser, so `/admin/` stays closed. The owner creates a private superuser.
+- **Docs:** `docs/DEPLOY.md` with step-by-step PythonAnywhere setup, updating and resetting. The README gets a "Live demo" section.
+- **Tests:** demo login, the read-only guard (blocked, allowed and switched off), the seeded admin's permissions, and the login page panel.
 
 ## Verification (every phase)
 - `python manage.py check`, `makemigrations --check --dry-run` and `python manage.py test` all pass. Failures get fixed before the phase stops, and I'll report the output exactly as it is.

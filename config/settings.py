@@ -20,14 +20,22 @@ INSECURE_DEFAULT_KEY = "dev-only-insecure-key-change-me"
 SECRET_KEY = os.getenv("SECRET_KEY", INSECURE_DEFAULT_KEY)
 DEBUG = env_bool("DEBUG", True)
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+# Full origins allowed to submit forms, e.g. https://yourname.pythonanywhere.com. Needed behind a
+# proxy that serves HTTPS but talks plain HTTP to Django.
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
 if not DEBUG and SECRET_KEY in {INSECURE_DEFAULT_KEY, "change-me-to-a-long-random-string"}:
     raise ImproperlyConfigured("Set a real SECRET_KEY in .env before running with DEBUG=False.")
 
+# Public portfolio demo: one-click demo logins, and the shared demo accounts can look at
+# everything but not change it (see accounts/demo.py).
+DEMO_MODE = env_bool("DEMO_MODE", False)
+
 # Production over HTTPS (set HTTPS=True in .env on the live server): secure cookies, redirect to
 # https:// and tell browsers to always use HTTPS (HSTS).
 if env_bool("HTTPS", False):
-    SECURE_SSL_REDIRECT = True
+    # Set SSL_REDIRECT=False when the host already redirects (PythonAnywhere's "Force HTTPS").
+    SECURE_SSL_REDIRECT = env_bool("SSL_REDIRECT", True)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.getenv("HSTS_SECONDS", "3600"))
@@ -144,6 +152,19 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+
+# ---------------------------------------------------------------------------
+# Logging: with DEBUG=False Django only emails errors to ADMINS, so print them
+# instead. On the live server they land in the host's error log.
+# ---------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"live_only": {"()": "django.utils.log.RequireDebugFalse"}},
+    "handlers": {"error_log": {"class": "logging.StreamHandler", "level": "ERROR", "filters": ["live_only"]}},
+    "loggers": {"django.request": {"handlers": ["error_log"]}},
+}
 
 
 # ---------------------------------------------------------------------------
