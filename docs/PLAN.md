@@ -11,7 +11,7 @@
 - [x] Phase 6: Admin dashboard, ML Insights, A/B toggle, branch `phase-6-dashboard` (done, merged into `main`)
 - [x] Phase 7: Shopping assistant chatbot (offline; added by the user after Phase 5), branch `phase-7-assistant` (done, merged into `main`)
 - [x] Phase 8: Polish (dark mode, responsiveness, tests, README), branch `phase-8-polish` (done, merged into `main`)
-- [ ] Phase 9: Online demo for recruiters on PythonAnywhere (added by the user after Phase 8), branch `phase-9-deploy` (code and `docs/DEPLOY.md` done; next: user tests, merge, then deploy on their account and add the live link to the README)
+- [x] Phase 9: Online demo for recruiters on PythonAnywhere (added by the user after Phase 8), branch `phase-9-deploy` (done, merged into `main`; deploy on PythonAnywhere with docs/DEPLOY.md)
 
 Each phase ends with:
 - check, tests and Playwright screenshots all green
