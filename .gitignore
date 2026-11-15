@@ -22,3 +22,6 @@ htmlcov/
 .idea/
 .vscode/
 .playwright-mcp/
+
+# Photo zip made for uploading to PythonAnywhere (docs/DEPLOY.md)
+recomart-media.zip
